@@ -1,0 +1,22 @@
+# NSX-T DFW Rule CSV Example – For automation use in production. Do not edit live firewall rules by hand.,,,,,,,,,
+Section,RuleName,Source,Destination,Service,Action,Direction,AppliedTo,Notes,Logging
+Prod-Web,Allow Web Frontends,SG-Prod-Frontend,SG-Prod-WebApp,"HTTP,HTTPS",ALLOW,IN_OUT,SG-Prod-WebApp,Allow web frontends to webapps,TRUE
+Prod-Web,Deny All Other Inbound,,SG-Prod-WebApp,,DROP,IN,SG-Prod-WebApp,Default deny for webapp ingress,TRUE
+Prod-App,Allow App To DB,SG-Prod-WebApp,SG-Prod-DB,"MySQL,SQL",ALLOW,OUT,SG-Prod-DB,Allow webapp to DB access,TRUE
+Prod-DB,Deny Inter-DB,,SG-Prod-DB,,DROP,IN_OUT,SG-Prod-DB,Deny DB to DB comms,TRUE
+Prod-Infra,Allow DNS,"SG-Prod-Frontend,SG-Prod-WebApp,SG-Prod-DB",SG-Infra-DNS,DNS,ALLOW,OUT,SG-Infra-DNS,Allow all prod to DNS,TRUE
+Prod-Infra,Allow NTP,"SG-Prod-DB,SG-Prod-WebApp",SG-Infra-NTP,NTP,ALLOW,OUT,SG-Infra-NTP,Allow prod to NTP,TRUE
+Prod-Infra,Allow Syslog,"SG-Prod-WebApp,SG-Prod-DB",SG-Infra-Syslog,SYSLOG,ALLOW,OUT,SG-Infra-Syslog,Allow syslog forwarding,TRUE
+Prod-Admin,Allow SSH Jumpbox,SG-Admin-Jumpbox,"SG-Prod-WebApp,SG-Prod-DB",SSH,ALLOW,IN_OUT,SG-Admin-Jumpbox,Jumpbox SSH access,TRUE
+Prod-Admin,Deny Direct SSH,,"SG-Prod-WebApp,SG-Prod-DB",SSH,DROP,IN,"SG-Prod-WebApp,SG-Prod-DB",No direct SSH to servers,TRUE
+Prod-Web,Allow HTTP Outbound,SG-Prod-WebApp,ANY,"HTTP,HTTPS",ALLOW,OUT,SG-Prod-WebApp,Webapp outbound to internet,TRUE
+Prod-Web,Deny Non-Prod Source,,SG-Prod-WebApp,ANY,DROP,IN,SG-Prod-WebApp,Deny non-prod access to prod,TRUE
+Prod-API,Allow API Gateway,SG-Prod-Frontend,SG-API-Gateway,"HTTPS,API",ALLOW,OUT,SG-API-Gateway,Web to API gateway,TRUE
+Prod-API,Deny All Other API,,SG-API-Gateway,,DROP,IN,SG-API-Gateway,Default deny API ingress,TRUE
+Prod-DB,Allow DB Backup,SG-Backup,SG-Prod-DB,"NFS,SMB",ALLOW,OUT,SG-Prod-DB,Allow backup to DB,TRUE
+Prod-DB,Deny Legacy Apps,,SG-Prod-DB,SG-Legacy-Apps,DROP,IN,SG-Prod-DB,Deny legacy to DB,TRUE
+Prod-Mgmt,Allow vCenter Mgmt,SG-Admin-Workstation,SG-vCenter,HTTPS,ALLOW,IN_OUT,SG-vCenter,vCenter admin access,TRUE
+Prod-Mgmt,Allow ESXi Mgmt,SG-Admin-Workstation,SG-ESXi-Hosts,"HTTPS,SSH",ALLOW,IN_OUT,SG-ESXi-Hosts,ESXi admin mgmt,TRUE
+Prod-Infra,Allow SMTP Outbound,"SG-Prod-WebApp,SG-Prod-DB",ANY,SMTP,ALLOW,OUT,"SG-Prod-WebApp,SG-Prod-DB",App/DB outbound email,TRUE
+Prod-Infra,Deny All Other Outbound,,ANY,,DROP,OUT,ANY,Default deny outbound,TRUE
+Prod-Admin,Deny All Inter-Admin,,SG-Admin-Jumpbox,,DROP,IN_OUT,SG-Admin-Jumpbox,Deny admin host to host,TRUE
