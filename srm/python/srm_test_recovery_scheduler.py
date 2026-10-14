@@ -27,6 +27,7 @@ def run_test(plan_name):
     print(f"Tested recovery plan: {plan_name}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     import schedule
     srm_login()
     plans = ["AppRecovery", "DBRecovery"]

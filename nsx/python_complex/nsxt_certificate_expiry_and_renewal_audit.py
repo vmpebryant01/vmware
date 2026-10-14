@@ -15,14 +15,12 @@ logging.basicConfig(filename='nsxt_cert_expiry_audit.log', level=logging.INFO, f
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]):
     sys.exit("Check .env")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
 session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
 
 def get_certs():
     url = f"https://{NSXT_SERVER}/api/v1/trust-management/certificates"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     if r.status_code != 200:
         logging.error(f"Failed to fetch certificates: {r.text}")
         sys.exit("Cert fetch failed")

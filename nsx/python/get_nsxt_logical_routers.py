@@ -17,14 +17,12 @@ logging.basicConfig(filename='get_nsxt_logical_routers.log', level=logging.INFO,
 if not NSXT_SERVER or not NSXT_USER or not NSXT_PASS:
     sys.exit("Check .env for NSXT_SERVER, NSXT_USER, NSXT_PASS")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
 session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
 
 def get_routers():
     url = f"https://{NSXT_SERVER}/api/v1/logical-routers"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     if r.status_code != 200:
         logging.error(f"Failed to fetch routers: {r.text}")
         sys.exit("NSX-T router fetch failed.")

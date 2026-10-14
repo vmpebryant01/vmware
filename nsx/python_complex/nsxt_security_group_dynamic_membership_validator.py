@@ -14,17 +14,16 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_group_validator.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def get_groups():
     url = f"https://{NSXT_SERVER}/policy/api/v1/infra/domains/default/groups"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     return r.json().get("results", [])
 
 def get_members(group_id):
     url = f"https://{NSXT_SERVER}/policy/api/v1/infra/domains/default/groups/{group_id}/members"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     return r.json().get("results", [])
 
 def main():

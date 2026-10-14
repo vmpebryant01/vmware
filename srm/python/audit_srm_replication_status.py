@@ -25,6 +25,7 @@ def get_replication_status():
             {"vm": "DBVM01", "group": "DBGroup", "status": "Warning", "lag_minutes": 120}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     status = get_replication_status()
     outcsv = "srm_replication_status.csv"

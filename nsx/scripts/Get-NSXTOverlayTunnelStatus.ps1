@@ -1,3 +1,9 @@
+throw 'NSX overlay tunnel health retrieval is not implemented for this example.'
+# Required published cmdlets are checked before credentials are requested.
+$requiredCommands = @('Get-NsxtTransportNode')
+$unavailableCommands = @($requiredCommands | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) })
+if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable: $($unavailableCommands -join ', '). This example needs an implemented SRM or NSX API adapter for the installed product version." }
+
 <#
 .SYNOPSIS
     Reports status of NSX-T overlay tunnels (TEP to TEP).

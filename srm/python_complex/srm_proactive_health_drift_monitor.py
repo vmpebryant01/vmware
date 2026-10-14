@@ -27,6 +27,7 @@ def send_alert(msg):
     logging.warning(f"ALERT: {msg}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     threshold_lag = 60  # minutes
     while True:
         health = get_health()

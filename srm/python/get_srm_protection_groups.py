@@ -24,6 +24,7 @@ def get_protection_groups():
     return [{"name": "AppGroup1", "type": "Array"}, {"name": "DBGroup", "type": "VR"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     groups = get_protection_groups()
     outcsv = "srm_protection_groups.csv"

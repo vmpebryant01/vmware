@@ -33,40 +33,37 @@ logging.basicConfig(filename='nsxt_vc_cmdb_depmap_enriched.log', level=logging.I
 for v in [NSXT_SERVER, NSXT_USER, NSXT_PASS, VCENTER_SERVER, VCENTER_USER, VCENTER_PASS, CMDB_URL, CMDB_USER, CMDB_PASS]:
     if not v: sys.exit("Check .env for all NSXT/vCenter/CMDB variables.")
 
-requests.packages.urllib3.disable_warnings()
 
 def nsx_session():
     s = requests.Session()
     s.auth = (NSXT_USER, NSXT_PASS)
-    s.verify = False
     return s
 
 def vc_session():
     s = requests.Session()
-    s.verify = False
-    r = s.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS))
+    r = s.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
     if r.status_code != 200:
         logging.error(f"vCenter login failed: {r.text}")
         sys.exit("vCenter login failed")
+    s.headers["vmware-api-session-id"] = r.json()["value"]
     return s
 
 def cmdb_session():
     s = requests.Session()
     s.auth = (CMDB_USER, CMDB_PASS)
-    s.verify = False
     return s
 
 def get_nsx_vms(session):
-    r = session.get(f"https://{NSXT_SERVER}/api/v1/fabric/virtual-machines")
+    r = session.get(f"https://{NSXT_SERVER}/api/v1/fabric/virtual-machines", timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def get_segments(session):
-    r = session.get(f"https://{NSXT_SERVER}/policy/api/v1/infra/segments")
+    r = session.get(f"https://{NSXT_SERVER}/policy/api/v1/infra/segments", timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def get_vcenter_vms(vc_session):
     url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    r = vc_session.get(url)
+    r = vc_session.get(url, timeout=30)
     if r.status_code != 200:
         logging.error(f"vCenter VM fetch failed: {r.text}")
         sys.exit("Failed to get vCenter VMs")
@@ -76,12 +73,12 @@ def get_vcenter_vm_tags(vc_session, vm_id):
     # Tags: REST API v7.0+/tagging (needs tag service); fallback = ""
     tag_url = f"https://{VCENTER_SERVER}/rest/com/vmware/cis/tagging/tag-assignment?~action=list-attached-tags"
     payload = {"object_id": {"id": vm_id, "type": "VirtualMachine"}}
-    r = vc_session.post(tag_url, json=payload)
+    r = vc_session.post(tag_url, json=payload, timeout=30)
     if r.status_code == 200 and r.json().get("value"):
         tag_ids = r.json()["value"]
         tags = []
         for tid in tag_ids:
-            tinfo = vc_session.get(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/tagging/tag/id:{tid}")
+            tinfo = vc_session.get(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/tagging/tag/id:{tid}", timeout=30)
             if tinfo.status_code == 200:
                 tags.append(tinfo.json().get("value", {}).get("name", tid))
         return ",".join(tags)
@@ -89,14 +86,14 @@ def get_vcenter_vm_tags(vc_session, vm_id):
 
 def get_vcenter_vm_notes(vc_session, vm_id):
     url = f"https://{VCENTER_SERVER}/rest/vcenter/vm/{vm_id}"
-    r = vc_session.get(url)
+    r = vc_session.get(url, timeout=30)
     if r.status_code == 200:
         return r.json().get("value", {}).get("notes", "")
     return ""
 
 def get_cmdb_data(cmdb_session, vm_name):
     url = f"{CMDB_URL}/api/now/table/cmdb_ci_vmware_instance"
-    r = cmdb_session.get(url, params={"name": vm_name})
+    r = cmdb_session.get(url, params={"name": vm_name}, timeout=30)
     if r.status_code != 200 or not r.json().get("result"):
         return {}
     res = r.json()["result"][0]
@@ -123,7 +120,7 @@ def get_flows(nsx_sess, vm_id, count=1000):
         },
         "page_size": count
     }
-    r = nsx_sess.post(url, json=query)
+    r = nsx_sess.post(url, json=query, timeout=30)
     if r.status_code != 200:
         logging.warning(f"No flow data for VM {vm_id}: {r.text}")
         return []

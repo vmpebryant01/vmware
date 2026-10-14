@@ -34,6 +34,7 @@ def fetch_backup_vms():
     return {"FinApp01", "Web01"}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm, vc, bkp = fetch_srm_vms(), fetch_vcenter_vms(), fetch_backup_vms()
     all_vms = sorted(srm | vc | bkp)
     rows = []

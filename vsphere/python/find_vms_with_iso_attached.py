@@ -1,57 +1,44 @@
-"""
-find_vms_with_iso_attached.py
+"""Export VMs with a CD-ROM device backed by an ISO file.
 
-Exports all VMs with an ISO mounted on any CD drive.
-Requires: requests, python-dotenv
-
-NOTE: ISO mount detection may require pyVmomi for deep disk device detail.
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+import argparse
+import csv
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_vms
 
-logging.basicConfig(filename='find_vms_with_iso_attached.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def iso_rows(vms, cdrom_type=None):
+    if cdrom_type is None:
+        from pyVmomi import vim
+        cdrom_type = vim.vm.device.VirtualCdrom
+    rows = []
+    for vm in vms:
+        config = getattr(vm, "config", None)
+        hardware = getattr(config, "hardware", None)
+        for device in getattr(hardware, "device", None) or []:
+            if not isinstance(device, cdrom_type):
+                continue
+            iso_path = getattr(getattr(device, "backing", None), "fileName", None)
+            if iso_path:
+                connected = getattr(getattr(device, "connectable", None), "connected", None)
+                rows.append((vm.name, iso_path, connected))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VM fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="vms_with_iso_attached.csv")
+    args = parser.parse_args(argv)
+    with vcenter_vms() as vms:
+        rows = iso_rows(vms)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["VM", "ISOPath", "Connected"])
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} ISO backed CD-ROM devices to {args.csv}")
 
-def main():
-    get_session()
-    vms = get_vms()
-    outcsv = "vms_with_iso_attached.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["VM", "ISO_Mounted"])
-        for vm in vms:
-            # REST API for vCenter does not provide ISO mount info directly.
-            writer.writerow([vm.get("name", ""), ""])
-    logging.info(f"Exported VMs with ISOs to {outcsv}")
 
 if __name__ == "__main__":
     main()

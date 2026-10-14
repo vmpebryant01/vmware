@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Export VMs to Excel with custom business/tag/cost fields.
+    Export VMs to Excel with inventory and tag fields.
 
 .DESCRIPTION
-    Includes business owner, app, tag data, estimated cost, and core VM properties.
+    Includes owner tags and core VM properties. Cost requires an environment-specific rate card.
     Requires ImportExcel PowerShell module.
 
 .NOTES
@@ -21,7 +21,7 @@ function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | 
 Write-Log "Exporting VMs to Excel with custom fields..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 
@@ -30,7 +30,6 @@ try {
     $report = foreach ($vm in $vms) {
         $tags = (Get-TagAssignment -Entity $vm | Select-Object -ExpandProperty Tag) -join ","
         $owner = ($tags -match "Owner:") ? ($tags -split "Owner:")[1].Split(",")[0] : ""
-        $cost = [math]::Round($vm.MemoryGB * 10 + $vm.NumCpu * 20, 2) # Placeholder logic
         [PSCustomObject]@{
             Name      = $vm.Name
             GuestOS   = $vm.Guest.OSFullName
@@ -38,7 +37,6 @@ try {
             MemGB     = $vm.MemoryGB
             Tags      = $tags
             Owner     = $owner
-            EstCost   = $cost
         }
     }
     $OutFile = "VMs_Custom_$(Get-Date -Format yyyyMMdd_HHmmss).xlsx"

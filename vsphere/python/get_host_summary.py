@@ -1,63 +1,45 @@
-"""
-get_host_summary.py
+"""Export ESXi host hardware and runtime summary fields.
 
-Fetches all ESXi hosts, exporting summary info: name, vendor, model, CPU, RAM, status.
-
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+import argparse
+import csv
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_hosts
 
-logging.basicConfig(filename='get_host_summary.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def host_rows(hosts):
+    rows = []
+    for host in hosts:
+        summary = getattr(host, "summary", None)
+        hardware = getattr(summary, "hardware", None)
+        runtime = getattr(summary, "runtime", None)
+        memory_bytes = getattr(hardware, "memorySize", None)
+        rows.append((
+            host.name,
+            str(getattr(runtime, "connectionState", "")),
+            str(getattr(runtime, "powerState", "")),
+            getattr(hardware, "vendor", None) or "",
+            getattr(hardware, "model", None) or "",
+            getattr(hardware, "numCpuCores", None),
+            memory_bytes // (1024 * 1024) if memory_bytes is not None else "",
+        ))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_hosts():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/host"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"Host fetch failed: {resp.text}")
-        sys.exit("Failed to fetch hosts.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="host_summary.csv")
+    args = parser.parse_args(argv)
+    with vcenter_hosts() as hosts:
+        rows = host_rows(hosts)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "ConnectionState", "PowerState", "Vendor", "Model", "CPUCores", "MemoryMB"])
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} hosts to {args.csv}")
 
-def main():
-    get_session()
-    hosts = get_hosts()
-    outcsv = "host_summary.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "ConnectionState", "PowerState", "Vendor", "Model", "CPU", "MemoryMB"])
-        for h in hosts:
-            writer.writerow([
-                h.get("name", ""),
-                h.get("connection_state", ""),
-                h.get("power_state", ""),
-                h.get("vendor", ""),
-                h.get("model", ""),
-                h.get("cpu_count", ""),
-                h.get("memory_size_MiB", "")
-            ])
-    logging.info(f"Exported {len(hosts)} hosts to {outcsv}")
 
 if __name__ == "__main__":
     main()

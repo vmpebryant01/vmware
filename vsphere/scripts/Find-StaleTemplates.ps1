@@ -1,3 +1,4 @@
+throw 'vCenter template deployment history is not available from this example; staleness cannot be determined.'
 <#
 .SYNOPSIS
     Report VM templates not deployed from in X months.
@@ -18,7 +19,7 @@ function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | 
 Write-Log "Finding stale VM templates..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 

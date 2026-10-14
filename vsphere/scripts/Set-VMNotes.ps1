@@ -19,7 +19,7 @@ function Write-Log ($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" |
 Write-Log "Setting VM notes..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 
@@ -28,7 +28,7 @@ try {
     $Note   = Read-Host "Enter new notes"
 
     Set-VM -VM $VMName -Notes $Note -Confirm:$false
-    Write-Log "Set notes for $VMName: $Note"
+    Write-Log "Set notes for ${VMName}: $Note"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 finally { Disconnect-VIServer -Server $vcServer -Confirm:$false; Write-Log "Disconnected." }
 Write-Log "Completed notes update."

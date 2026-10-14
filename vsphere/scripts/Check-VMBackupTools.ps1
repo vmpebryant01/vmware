@@ -21,7 +21,7 @@ Write-Log "Checking VM backup agents..."
 $backupServices = @("VeeamAgent","CVService","AvamarClient")
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 

@@ -38,22 +38,24 @@ def get_vm_backups():
     return jobs
 
 def vcenter_login(session):
-    r = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS))
+    r = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
     if r.status_code != 200:
         logging.error("vCenter login failed: %s", r.text)
         sys.exit("vCenter login failed")
-    return r.json()['value']
+    token = r.json()['value']
+    session.headers['vmware-api-session-id'] = token
+    return token
 
 def get_vms(session):
-    resp = session.get(f"https://{VCENTER_SERVER}/rest/vcenter/vm")
+    resp = session.get(f"https://{VCENTER_SERVER}/rest/vcenter/vm", timeout=30)
     if resp.status_code != 200:
         logging.error("VM fetch failed: %s", resp.text)
         sys.exit("Failed to get VMs")
     return resp.json()['value']
 
 def main():
+    raise RuntimeError("Backup platform integrations are incomplete; this example cannot assess backup compliance.")
     session = requests.Session()
-    session.verify = False
     vcenter_login(session)
     vms = get_vms(session)
     backups = get_vm_backups()  # {vm_name: last_backup_date}

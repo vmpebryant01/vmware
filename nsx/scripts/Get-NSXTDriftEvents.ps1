@@ -1,3 +1,4 @@
+throw 'NSX drift event retrieval is not implemented for this example.'
 <#
 .SYNOPSIS
     Reports NSX-T config drift and change events.
@@ -25,7 +26,7 @@ try {
 } catch { Write-Log "ERROR: $_"; throw }
 
 try {
-    # PowerCLI may have limited event fetch support—placeholder
+    # PowerCLI may have limited event fetch support; placeholder
     $OutFile = "NSXTDriftEvents_$(Get-Date -Format yyyyMMdd_HHmmss).csv"
     "" | Out-File $OutFile
     Write-Log "Drift event report exported to $OutFile"

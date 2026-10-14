@@ -29,6 +29,7 @@ def notify_failure(plan, result):
     logging.warning(f"SRM test for {plan} failed: {result}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     plans = ["FinanceRP", "DBRP"]
     schedule.every().monday.at("09:00").do(run_test, plan=plans[0])
     schedule.every().wednesday.at("09:00").do(run_test, plan=plans[1])

@@ -18,7 +18,7 @@ function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | 
 Write-Log "Finding VMs with snapshots and replication..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Import-Module VMware.VimAutomation.Srm -ErrorAction SilentlyContinue
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }

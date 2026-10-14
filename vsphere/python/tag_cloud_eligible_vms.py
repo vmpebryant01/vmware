@@ -4,7 +4,7 @@ tag_cloud_eligible_vms.py
 Flags and exports VMs suitable for cloud migration (based on OS, size, power status).
 Requires: requests, python-dotenv
 
-Note: Tagging in vSphere REST API may be limited—this script identifies and exports; manual tagging may be needed.
+Note: Tagging in vSphere REST API may be limited; this script identifies and exports, and manual tagging may be needed.
 """
 
 import os, sys, csv, logging, requests
@@ -20,28 +20,29 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     logging.error("Missing environment variables.")
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
-session.verify = False
 
 def get_session():
     resp = session.post(
         f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
+        auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
     if resp.status_code != 200:
         logging.error(f"Login failed: {resp.text}")
         sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
+    token = resp.json()['value']
+    session.headers['vmware-api-session-id'] = token
+    return token
 
 def get_vms():
     url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
+    resp = session.get(url, timeout=30)
     if resp.status_code != 200:
         logging.error(f"VM fetch failed: {resp.text}")
         sys.exit("Failed to fetch VMs.")
     return resp.json()['value']
 
 def main():
+    raise RuntimeError("This example does not apply tags or assess cloud readiness with a verified policy.")
     get_session()
     vms = get_vms()
     outcsv = "cloud_eligible_vms.csv"

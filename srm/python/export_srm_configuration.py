@@ -24,6 +24,7 @@ def get_full_config():
     return {"groups": [{"name": "AppGroup1", "type": "Array"}], "plans": [{"name": "AppRecovery"}], "settings": {}}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     config = get_full_config()
     with open("srm_config.json", "w") as f:

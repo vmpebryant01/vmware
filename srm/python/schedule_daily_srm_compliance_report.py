@@ -36,6 +36,7 @@ def generate_report():
     logging.info("Daily SRM compliance report written to %s", outcsv)
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     schedule.every().day.at("06:00").do(generate_report)
     print("Daily SRM compliance scheduler started (Ctrl+C to stop)...")

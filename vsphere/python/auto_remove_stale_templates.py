@@ -21,6 +21,7 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
 def main():
+    raise RuntimeError("This example has no live data integration; a report would contain placeholder values.")
     months = int(input("Flag templates unused in how many months? "))
     cutoff = datetime.utcnow() - timedelta(days=months*30)
     outcsv = "stale_templates.csv"

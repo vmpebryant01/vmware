@@ -2,6 +2,6 @@
 
 - All PowerCLI scripts are in `/scripts`, Python scripts in `/python`.
 - Run scripts from within their folder; see README in each submodule for details.
-- All scripts log to a `.log` file and output to CSV or JSON as described.
+- Scripts produce the files described in their own source. Incomplete integrations stop with an error before creating an operational report.
 
 Credential handling is via prompt (PowerCLI) or `.env` (Python). Never check credentials into source control.

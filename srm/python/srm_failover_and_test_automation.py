@@ -31,6 +31,7 @@ def run_recovery_plan(plan_name, test=False):
     print(f"{action} completed (mock) for plan {plan_name}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     plan_name = input("Enter Recovery Plan name: ")
     mode = input("Run as (test/failover): ").lower()

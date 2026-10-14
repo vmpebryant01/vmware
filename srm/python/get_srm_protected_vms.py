@@ -24,6 +24,7 @@ def get_protected_vms():
     return [{"name": "AppVM01", "group": "AppGroup1"}, {"name": "DBVM01", "group": "DBGroup"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     vms = get_protected_vms()
     outcsv = "srm_protected_vms.csv"

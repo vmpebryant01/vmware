@@ -20,7 +20,7 @@ function Write-Log ($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" |
 Write-Log "Starting VM inventory for $vcServer"
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: Could not connect to vCenter: $_"; throw }
 

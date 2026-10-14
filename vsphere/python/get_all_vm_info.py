@@ -1,68 +1,47 @@
-"""
-get_all_vm_info.py
+"""Export vSphere VM inventory fields available through pyVmomi.
 
-Connects to vCenter and exports a detailed VM inventory to CSV.
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os
-import sys
+import argparse
 import csv
-import logging
-import requests
-from dotenv import load_dotenv
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_vms
 
-logging.basicConfig(filename='get_all_vm_info.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables. Check .env file.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
+def vm_rows(vms):
+    rows = []
+    for vm in vms:
+        summary = getattr(vm, "summary", None)
+        config = getattr(summary, "config", None)
+        runtime = getattr(vm, "runtime", None)
+        host = getattr(runtime, "host", None)
+        datastores = sorted(store.name for store in (getattr(vm, "datastore", None) or []))
+        rows.append((
+            vm.name,
+            getattr(vm, "_moId", ""),
+            str(getattr(runtime, "powerState", "")),
+            getattr(config, "guestFullName", None) or "",
+            getattr(config, "numCpu", None),
+            getattr(config, "memorySizeMB", None),
+            getattr(host, "name", "") if host is not None else "",
+            ";".join(datastores),
+        ))
+    return sorted(rows)
 
-session = requests.Session()
-session.verify = False
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="all_vm_info.csv")
+    args = parser.parse_args(argv)
+    with vcenter_vms() as vms:
+        rows = vm_rows(vms)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "VMID", "PowerState", "GuestOS", "CPUCount", "MemoryMB", "Host", "Datastores"])
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} VMs to {args.csv}")
 
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VMs fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
-
-def main():
-    get_session()
-    vms = get_vms()
-    outcsv = "all_vm_info.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "PowerState", "GuestOS", "CPU", "MemoryMB", "VMHost", "Datastores", "Tags"])
-        for vm in vms:
-            writer.writerow([
-                vm.get("name", ""),
-                vm.get("power_state", ""),
-                vm.get("guest_OS", ""),
-                vm.get("cpu_count", ""),
-                vm.get("memory_size_MiB", ""),
-                vm.get("host", ""),
-                ",".join(vm.get("datastores", [])),
-                ""  # Tag info requires extra API calls
-            ])
-    logging.info(f"Exported {len(vms)} VMs to {outcsv}")
 
 if __name__ == "__main__":
     main()

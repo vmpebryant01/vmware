@@ -1,56 +1,42 @@
-"""
-monitor_vm_performance.py
+"""Export a point-in-time VM CPU and guest memory usage sample.
 
-Collects last-24h average CPU and memory usage for each VM (uses vCenter REST summary if available).
-
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+import argparse
+import csv
+from datetime import datetime, timezone
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_vms
 
-logging.basicConfig(filename='monitor_vm_performance.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def performance_rows(vms, collected_at):
+    rows = []
+    for vm in vms:
+        summary = getattr(vm, "summary", None)
+        quick = getattr(summary, "quickStats", None)
+        rows.append((
+            vm.name,
+            collected_at,
+            getattr(quick, "overallCpuUsage", None),
+            getattr(quick, "guestMemoryUsage", None),
+        ))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VM fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="vm_performance.csv")
+    args = parser.parse_args(argv)
+    collected_at = datetime.now(timezone.utc).isoformat()
+    with vcenter_vms() as vms:
+        rows = performance_rows(vms, collected_at)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "CollectedAtUTC", "CpuUsageMHz", "GuestMemoryUsageMB"])
+        writer.writerows(rows)
+    print(f"Exported usage samples for {len(rows)} VMs to {args.csv}")
 
-def main():
-    get_session()
-    vms = get_vms()
-    outcsv = "vm_performance.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "CPU", "MemoryMB"])
-        for vm in vms:
-            # Placeholder for real metrics (REST summary returns limited perf; pyVmomi required for deep stats)
-            writer.writerow([vm.get("name", ""), vm.get("cpu_count", ""), vm.get("memory_size_MiB", "")])
-    logging.info(f"Exported {len(vms)} VMs to {outcsv}")
 
 if __name__ == "__main__":
     main()

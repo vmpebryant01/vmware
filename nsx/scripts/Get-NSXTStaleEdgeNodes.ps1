@@ -1,3 +1,8 @@
+# Required published cmdlets are checked before credentials are requested.
+$requiredCommands = @('Get-NsxtEdgeNode')
+$unavailableCommands = @($requiredCommands | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) })
+if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable: $($unavailableCommands -join ', '). This example needs an implemented SRM or NSX API adapter for the installed product version." }
+
 <#
 .SYNOPSIS
     Finds NSX-T Edge Nodes not assigned to any Edge Cluster.

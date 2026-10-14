@@ -20,6 +20,7 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
 def main():
+    raise RuntimeError("This example has no live data integration; a report would contain placeholder values.")
     desired = input("Enable guest time sync? (yes/no): ").lower().startswith('y')
     outcsv = "remediate_guest_time_sync.csv"
     with open(outcsv, "w", newline="") as f:

@@ -35,6 +35,7 @@ def execute_failover(plan):
     logging.info(f"Failover executed for plan {plan}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     plan = load_wave_plan()
     for block in sorted(plan, key=lambda x: x["wave"]):
         request_approval(block["wave"])

@@ -1,22 +1,35 @@
-name: Lint Scripts
+name: Script checks
 
 on: [push, pull_request]
 
 jobs:
-  powercli-lint:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: PowerShell Lint
-        run: echo "PowerShell linter would run here"
-
-  python-lint:
+  python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      - name: Python Lint
-        run: echo "Python linter would run here"
+          python-version: '3.11'
+      - name: Compile Python files
+        run: python -m compileall -q nsx srm vsphere
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse PowerShell files
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem -Path nsx,srm,vsphere -Filter *.ps1 -Recurse | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              $errors | ForEach-Object { Write-Error "$($_.Extent.File):$($_.Extent.StartLineNumber): $($_.Message)" }
+            }
+          }
+          if ($failed) { exit 1 }

@@ -47,6 +47,7 @@ def estimate_cloud_cost(vm):
     return 100 + mem_gb * 5 + vm["cpu_count"] * 10
 
 def main():
+    raise RuntimeError("This example uses invented inventory or metrics and cannot produce an operational report.")
     vms = get_vms()
     outcsv = "hybrid_migration_plan.csv"
     with open(outcsv, "w", newline="") as f:

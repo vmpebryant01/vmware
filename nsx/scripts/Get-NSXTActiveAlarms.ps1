@@ -1,3 +1,4 @@
+throw 'NSX active alarm retrieval is not implemented for this example.'
 <#
 .SYNOPSIS
     Exports all active alarms/events on NSX-T managers and nodes.

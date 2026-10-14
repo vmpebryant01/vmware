@@ -15,15 +15,14 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_topology_map.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def get_segments():
-    r = session.get(f"https://{NSXT_SERVER}/policy/api/v1/infra/segments")
+    r = session.get(f"https://{NSXT_SERVER}/policy/api/v1/infra/segments", timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def get_routers():
-    r = session.get(f"https://{NSXT_SERVER}/api/v1/logical-routers")
+    r = session.get(f"https://{NSXT_SERVER}/api/v1/logical-routers", timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def main():
@@ -31,7 +30,7 @@ def main():
     dot = graphviz.Digraph(comment='NSX-T Topology')
     for r in routers: dot.node(r.get("display_name",""), shape="doublecircle")
     for s in segs:
-        dot.node(s.get("display_name",""), shape="box")
+        dot.node(s.get("display_name","", timeout=30), shape="box")
         # Placeholder: in production, link segments to routers as per config
     # For example: dot.edge("Web-Segment", "Tier-1-Router")
     dot.render("nsxt_topology_map", format="png")

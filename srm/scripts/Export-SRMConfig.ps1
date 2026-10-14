@@ -1,3 +1,8 @@
+# Required published cmdlets are checked before credentials are requested.
+$requiredCommands = @('Get-SrmProtectionGroup', 'Get-SrmProtectionGroupMapping', 'Get-SrmRecoveryPlan')
+$unavailableCommands = @($requiredCommands | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) })
+if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable: $($unavailableCommands -join ', '). This example needs an implemented SRM or NSX API adapter for the installed product version." }
+
 <#
 .SYNOPSIS
     Exports SRM configuration and inventory for backup and compliance.

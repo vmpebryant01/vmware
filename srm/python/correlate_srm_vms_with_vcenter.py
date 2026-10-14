@@ -34,6 +34,7 @@ def get_vcenter_vms():
     return ["AppVM01", "DBVM01", "UnprotectedVM"]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     vcenter_login()
     srm_vms = get_srm_vms()

@@ -19,14 +19,12 @@ logging.basicConfig(filename='export_nsxt_config_backup.log', level=logging.INFO
 if not NSXT_SERVER or not NSXT_USER or not NSXT_PASS:
     sys.exit("Check .env for NSXT_SERVER, NSXT_USER, NSXT_PASS")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
 session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
 
 def trigger_backup():
     url = f"https://{NSXT_SERVER}/api/v1/cluster/backups?action=create"
-    r = session.post(url, json={"backup_password": NSXT_PASS})
+    r = session.post(url, json={"backup_password": NSXT_PASS}, timeout=30)
     if r.status_code not in [200,201]:
         logging.error(f"Failed to trigger config backup: {r.text}")
         sys.exit("Config backup trigger failed.")

@@ -16,12 +16,11 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_policy_rollback.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def fetch_config(endpoint):
     url = f"https://{NSXT_SERVER}/{endpoint}"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     if r.status_code != 200: return []
     return r.json().get("results", [])
 

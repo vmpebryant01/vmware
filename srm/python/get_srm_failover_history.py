@@ -24,6 +24,7 @@ def get_failover_history():
     return [{"plan": "AppRecovery", "type": "Test", "date": "2024-07-01", "result": "Success"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     history = get_failover_history()
     outcsv = "srm_failover_history.csv"

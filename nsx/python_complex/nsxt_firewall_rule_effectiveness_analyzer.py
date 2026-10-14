@@ -15,15 +15,14 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_firewall_effectiveness.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def get_dfw_rules():
     url = f"https://{NSXT_SERVER}/api/v1/firewall/sections"
-    r = session.get(url); results = []
+    r = session.get(url, timeout=30); results = []
     for s in r.json().get("results", []):
         secid = s["id"]
-        r2 = session.get(f"https://{NSXT_SERVER}/api/v1/firewall/sections/{secid}/rules")
+        r2 = session.get(f"https://{NSXT_SERVER}/api/v1/firewall/sections/{secid}/rules", timeout=30)
         for rule in r2.json().get("results", []): rule["section"] = s["display_name"]; results.append(rule)
     return results
 

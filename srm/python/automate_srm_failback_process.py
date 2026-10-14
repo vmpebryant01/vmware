@@ -25,6 +25,7 @@ def failback(plan_name):
     print(f"Failback (mock) for plan: {plan_name}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     plan = input("Enter plan name (or 'all'): ")
     failback(plan)

@@ -26,6 +26,7 @@ def get_health_status():
     return {"connection": "OK", "recent_errors": 0, "last_error": ""}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     health = get_health_status()
     with open("srm_health.txt", "w") as f:

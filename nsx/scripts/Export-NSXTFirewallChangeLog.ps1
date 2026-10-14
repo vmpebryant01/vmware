@@ -1,3 +1,4 @@
+throw 'NSX firewall change event retrieval is not implemented for this example.'
 <#
 .SYNOPSIS
     Exports a log of all firewall rule changes in NSX-T for audit.

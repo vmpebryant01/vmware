@@ -41,6 +41,7 @@ def escalate_noncompliance(obj, violations):
     logging.warning(f"Escalate: {obj['name']} - {violations}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     pgs, rps, vms = fetch_protection_groups(), fetch_recovery_plans(), fetch_protected_vms()
     group_df, rp_df, vm_df = pd.DataFrame(pgs), pd.DataFrame(rps), pd.DataFrame(vms)
     group_df["Violations"] = group_df.apply(lambda x: "; ".join(check_group_policy(x)), axis=1)

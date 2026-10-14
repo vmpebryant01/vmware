@@ -23,9 +23,7 @@ logging.basicConfig(filename='automated_srm_compliance_audit.log', level=logging
 if not SRM_SERVER or not SRM_USER or not SRM_PASS:
     sys.exit("Missing SRM env vars. Check .env.")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
-session.verify = False
 
 def srm_login():
     # Placeholder; implement actual login if SRM REST API in use
@@ -44,6 +42,7 @@ def escalate_exception(group, violations):
     logging.warning(f"Escalate {group['name']} for {violations}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     groups = get_protection_groups()
     required_rpo = 60
