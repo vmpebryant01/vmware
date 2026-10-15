@@ -1,60 +1,42 @@
-"""
-get_datastore_usage.py
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
+"""Export datastore capacity and free space from vSphere.
 
-Exports all datastores with name, type, free/capacity/used space.
-
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+import argparse
+import csv
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_datastores
 
-logging.basicConfig(filename='get_datastore_usage.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def datastore_rows(datastores):
+    gib = 1024 ** 3
+    rows = []
+    for datastore in datastores:
+        summary = datastore.summary
+        rows.append((
+            datastore.name,
+            summary.type,
+            round(summary.capacity / gib, 2),
+            round(summary.freeSpace / gib, 2),
+            summary.accessible,
+        ))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_datastores():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/datastore"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"Datastore fetch failed: {resp.text}")
-        sys.exit("Failed to fetch datastores.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="datastore_usage.csv")
+    args = parser.parse_args(argv)
+    with vcenter_datastores() as datastores:
+        rows = datastore_rows(datastores)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "Type", "CapacityGiB", "FreeGiB", "Accessible"])
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} datastores to {args.csv}")
 
-def main():
-    get_session()
-    ds = get_datastores()
-    outcsv = "datastore_usage.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "Type", "CapacityGB", "FreeGB"])
-        for d in ds:
-            writer.writerow([
-                d.get("name", ""),
-                d.get("type", ""),
-                round(d.get("capacity", 0) / (1024**3), 2) if d.get("capacity") else "",
-                round(d.get("free_space", 0) / (1024**3), 2) if d.get("free_space") else ""
-            ])
-    logging.info(f"Exported {len(ds)} datastores to {outcsv}")
 
 if __name__ == "__main__":
     main()

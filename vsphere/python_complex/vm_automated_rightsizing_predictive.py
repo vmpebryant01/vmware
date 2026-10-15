@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 vm_automated_rightsizing_predictive.py
 
@@ -31,6 +32,7 @@ def fetch_metrics_for_vm(vm_name):
     return cpu, mem
 
 def main():
+    raise RuntimeError("This example uses invented inventory or metrics and cannot produce an operational report.")
     # For demonstration, process a few sample VMs
     vm_list = ["APP01", "DB02", "WEB03"]
     df = pd.DataFrame()

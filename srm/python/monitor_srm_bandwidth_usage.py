@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 monitor_srm_bandwidth_usage.py
 
@@ -27,6 +28,7 @@ def get_bandwidth_usage():
             {"group": "DBGroup",    "bandwidth_mbps": 20}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     usage = get_bandwidth_usage()
     outcsv = "srm_bandwidth_usage.csv"

@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 check_vm_replicas_and_drs.py
 
@@ -20,6 +21,7 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
 def main():
+    raise RuntimeError("This example has no live data integration; a report would contain placeholder values.")
     outcsv = "vm_replicas_and_drs.csv"
     with open(outcsv, "w", newline="") as f:
         writer = csv.writer(f)

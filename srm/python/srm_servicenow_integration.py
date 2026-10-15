@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 srm_servicenow_integration.py
 
@@ -27,13 +28,14 @@ def create_snow_incident(short_desc, desc):
     resp = requests.post(
         f"{SERVICENOW_URL}/api/now/table/incident",
         auth=(SERVICENOW_USER, SERVICENOW_PASS),
-        json={"short_description": short_desc, "description": desc})
+        json={"short_description": short_desc, "description": desc}, timeout=30)
     if resp.status_code not in [200,201]:
         logging.error(f"Failed to create SNOW incident: {resp.text}")
     else:
         logging.info(f"SNOW incident created: {resp.json().get('result', {}).get('number')}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     # TODO: Get SRM events (failover, protection, test)
     event = {"type": "FailoverTest", "group": "AppGroup1", "status": "Success", "time": "2024-07-01T08:00:00"}
     short_desc = f"SRM Event: {event['type']} for {event['group']}"

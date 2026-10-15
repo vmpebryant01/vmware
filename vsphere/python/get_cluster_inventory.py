@@ -1,61 +1,42 @@
-"""
-get_cluster_inventory.py
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
+"""Export vSphere cluster host count, DRS, and HA configuration.
 
-Fetches all vSphere clusters, their host count, CPU, and memory totals.
-Exports to CSV.
-
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+import argparse
+import csv
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import vcenter_clusters
 
-logging.basicConfig(filename='get_cluster_inventory.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def cluster_rows(clusters):
+    rows = []
+    for cluster in clusters:
+        config = getattr(cluster, "configuration", None)
+        drs = getattr(config, "drsConfig", None)
+        ha = getattr(config, "dasConfig", None)
+        rows.append((
+            cluster.name,
+            len(getattr(cluster, "host", None) or []),
+            getattr(drs, "enabled", None),
+            getattr(ha, "enabled", None),
+        ))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_clusters():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/cluster"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"Cluster fetch failed: {resp.text}")
-        sys.exit("Failed to fetch clusters.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="cluster_inventory.csv")
+    args = parser.parse_args(argv)
+    with vcenter_clusters() as clusters:
+        rows = cluster_rows(clusters)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "HostCount", "DRSEnabled", "HAEnabled"])
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} clusters to {args.csv}")
 
-def main():
-    get_session()
-    clusters = get_clusters()
-    outcsv = "cluster_inventory.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "HostCount", "DRS", "HA"])
-        for cl in clusters:
-            writer.writerow([
-                cl.get("name", ""),
-                cl.get("host_count", ""),
-                cl.get("drs_enabled", ""),
-                cl.get("ha_enabled", "")
-            ])
-    logging.info(f"Exported {len(clusters)} clusters to {outcsv}")
 
 if __name__ == "__main__":
     main()

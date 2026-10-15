@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """
 nsxt_api_health_and_performance_monitor.py
 
@@ -15,15 +16,14 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_api_health.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def main():
     api_url = f"https://{NSXT_SERVER}/api/v1/transport-nodes"
     while True:
         t0 = time.time()
         try:
-            r = session.get(api_url)
+            r = session.get(api_url, timeout=30)
             latency = time.time() - t0
             if r.status_code != 200 or latency > 2:
                 logging.warning(f"NSX-T API health issue: status {r.status_code}, latency {latency:.2f}s")

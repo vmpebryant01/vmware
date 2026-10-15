@@ -6,7 +6,7 @@
     Exports firmware/driver inventory for hardware compliance.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Some info may require vendor VIBs/tools.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"
@@ -18,7 +18,7 @@ function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | 
 Write-Log "Exporting host firmware and driver versions..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 

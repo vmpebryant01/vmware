@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 cleanup_stale_srm_mappings.py
 
@@ -24,6 +25,7 @@ def find_stale_mappings():
     return [{"vm": "OldVM01", "status": "Stale"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     mappings = find_stale_mappings()
     outcsv = "srm_stale_mappings.csv"

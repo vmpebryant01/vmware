@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 correlate_srm_vms_with_vcenter.py
 
@@ -34,6 +35,7 @@ def get_vcenter_vms():
     return ["AppVM01", "DBVM01", "UnprotectedVM"]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     vcenter_login()
     srm_vms = get_srm_vms()

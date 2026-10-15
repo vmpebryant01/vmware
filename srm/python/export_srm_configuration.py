@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 export_srm_configuration.py
 
@@ -24,6 +25,7 @@ def get_full_config():
     return {"groups": [{"name": "AppGroup1", "type": "Array"}], "plans": [{"name": "AppRecovery"}], "settings": {}}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     config = get_full_config()
     with open("srm_config.json", "w") as f:

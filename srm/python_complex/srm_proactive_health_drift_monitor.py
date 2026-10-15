@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 srm_proactive_health_drift_monitor.py
 
@@ -27,6 +28,7 @@ def send_alert(msg):
     logging.warning(f"ALERT: {msg}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     threshold_lag = 60  # minutes
     while True:
         health = get_health()

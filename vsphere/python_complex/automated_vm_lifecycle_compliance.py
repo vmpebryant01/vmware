@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 automated_vm_lifecycle_compliance.py
 
@@ -33,19 +34,19 @@ logging.basicConfig(filename='automated_vm_lifecycle_compliance.log', level=logg
 if not VCENTER_SERVER or not VCENTER_USER or not VCENTER_PASS:
     sys.exit("Missing vCenter env vars. Check .env.")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
-session.verify = False
 
 def vcenter_login():
-    r = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS))
+    r = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
     if r.status_code != 200:
         logging.error("vCenter login failed: %s", r.text)
         sys.exit("vCenter login failed")
-    return r.json()['value']
+    token = r.json()['value']
+    session.headers['vmware-api-session-id'] = token
+    return token
 
 def get_vms():
-    resp = session.get(f"https://{VCENTER_SERVER}/rest/vcenter/vm")
+    resp = session.get(f"https://{VCENTER_SERVER}/rest/vcenter/vm", timeout=30)
     if resp.status_code != 200:
         logging.error("VM fetch failed: %s", resp.text)
         sys.exit("Failed to get VMs")
@@ -80,6 +81,7 @@ def escalate_exception(vm, violations):
     logging.warning(f"Escalating {vm['name']} for {violations}")
 
 def main():
+    raise RuntimeError("Lifecycle checks and escalation are incomplete; this example cannot produce a compliance report.")
     policy = load_policy()
     vcenter_login()
     vms = get_vms()

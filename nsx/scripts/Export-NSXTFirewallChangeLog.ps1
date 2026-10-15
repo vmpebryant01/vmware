@@ -1,3 +1,4 @@
+throw 'NSX firewall change event retrieval is not implemented for this example.'
 <#
 .SYNOPSIS
     Exports a log of all firewall rule changes in NSX-T for audit.
@@ -6,7 +7,7 @@
     Fetches and exports firewall rule add/modify/delete actions in the last N days.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Deep audit may require REST/CLI for event fetch.
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"

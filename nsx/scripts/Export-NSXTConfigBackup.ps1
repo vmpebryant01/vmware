@@ -6,7 +6,7 @@
     Starts a manual config backup, waits for completion, downloads the file to a local path.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Requires backup configured and NSX Manager permissions.
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"

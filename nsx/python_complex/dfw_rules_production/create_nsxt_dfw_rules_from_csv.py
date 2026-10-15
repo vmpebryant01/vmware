@@ -1,117 +1,187 @@
-"""
-create_nsxt_dfw_rules_from_csv.py
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
+"""Preview or apply NSX distributed firewall rules from a CSV file.
 
-Reads a CSV of DFW rule definitions and creates rules in NSX-T Policy API (one section at a time).
-- Each section is created if not present.
-- Each rule is created in the target section.
-- Supports: Source/Destination groups, Service(s), Action, Direction, AppliedTo, Notes, Logging.
-- Skips commented lines (#).
+Author: Paul Bryant
 
-Requires: python-dotenv, requests, pandas
+The default mode validates and prints the plan without contacting NSX.
+Use --apply only after reviewing the policy and rule order. Set NSXT_SERVER,
+NSXT_USER, and NSXT_PASS in the environment or a local .env file.
 """
 
-import os, sys, csv, logging, requests, pandas as pd
-from dotenv import load_dotenv
+import argparse
+import csv
+from hashlib import sha1
+import os
+from pathlib import Path
+import re
+import sys
 
-load_dotenv()
-NSXT_SERVER = os.getenv("NSXT_SERVER")
-NSXT_USER   = os.getenv("NSXT_USER")
-NSXT_PASS   = os.getenv("NSXT_PASS")
 
-CSV_FILE = "dfw_rules_production.csv"
+DEFAULT_CSV = Path(__file__).with_name("dfw_rules_production.csv")
+REQUIRED_COLUMNS = {
+    "Section", "RuleName", "Source", "Destination", "Service",
+    "Action", "Direction", "AppliedTo", "Notes", "Logging",
+}
+VALID_ACTIONS = {"ALLOW", "DROP", "REJECT"}
+VALID_DIRECTIONS = {"IN", "OUT", "IN_OUT"}
 
-logging.basicConfig(filename='create_nsxt_dfw_rules.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]):
-    sys.exit("Check .env for NSXT_SERVER, NSXT_USER, NSXT_PASS")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
+def object_id(name):
+    """Make a stable path segment without collisions from truncated names."""
+    prefix = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-").lower()[:48]
+    if not prefix:
+        raise ValueError(f"Cannot create an NSX identifier from {name!r}")
+    return f"{prefix}-{sha1(name.encode('utf-8')).hexdigest()[:8]}"
 
-def get_or_create_section(section):
-    # Find section by name
-    url = f"https://{NSXT_SERVER}/policy/api/v1/infra/domains/default/gateway-policies"
-    s = session.get(url)
-    if s.status_code != 200:
-        logging.error(f"Failed to fetch DFW policies: {s.text}")
-        sys.exit("Policy fetch failed")
-    existing = [x for x in s.json().get("results", []) if x.get("display_name") == section]
-    if existing:
-        return existing[0]["id"]
-    # Create section as a new gateway policy (for demo, use DFW Policy API for "default" domain)
-    policy_id = section.replace(" ","-")
-    create_url = f"https://{NSXT_SERVER}/policy/api/v1/infra/domains/default/gateway-policies/{policy_id}"
-    body = {
-        "display_name": section,
-        "id": policy_id,
-        "category": "Application",
-        "stateful": True,
-        "sequence_number": 1000  # or use default order
-    }
-    c = session.put(create_url, json=body)
-    if c.status_code not in [200,201]:
-        logging.error(f"Failed to create section {section}: {c.text}")
-        sys.exit(f"Section create failed for {section}")
-    return policy_id
 
-def parse_services(services):
-    # For demo: if service is built-in (HTTP, HTTPS, etc), just return as-is, else must use service path
-    if not services:
-        return []
-    return [s.strip() for s in services.split(",") if s.strip()]
+def paths(value, prefix):
+    """Convert CSV names to policy paths, preserving ANY and full paths."""
+    names = [item.strip() for item in value.split(",") if item.strip()]
+    if not names or names == ["ANY"]:
+        return ["ANY"]
+    if "ANY" in names:
+        raise ValueError("ANY cannot be combined with named objects")
+    return [name if name.startswith("/") else prefix + name for name in names]
 
-def parse_groups(grps):
-    # Returns a list of NSX Policy group paths
-    if not grps:
-        return []
-    return [f"/infra/domains/default/groups/{g.strip()}" if not g.strip().startswith("/") else g.strip() for g in grps.split(",")]
 
-def create_rule(section_id, rule):
-    rule_id = rule["RuleName"].replace(" ","-")[:30]
-    url = f"https://{NSXT_SERVER}/policy/api/v1/infra/domains/default/gateway-policies/{section_id}/rules/{rule_id}"
-    body = {
-        "display_name": rule["RuleName"],
-        "id": rule_id,
-        "source_groups": parse_groups(rule["Source"]),
-        "destination_groups": parse_groups(rule["Destination"]),
-        "services": parse_services(rule["Service"]),
-        "action": rule["Action"].upper(),
-        "direction": rule["Direction"].upper(),
-        "notes": rule.get("Notes",""),
-        "logged": str(rule.get("Logging","")).lower() in ["true","yes","1"],
-        "disabled": False,
-        "sequence_number": 0,
-    }
-    # "applied_tos" (target) group(s)
-    if rule.get("AppliedTo"):
-        body["applied_tos"] = [{"target_type":"Group","target_id":g.strip()} for g in rule["AppliedTo"].split(",")]
-    resp = session.put(url, json=body)
-    if resp.status_code not in [200,201]:
-        logging.error(f"Rule create failed for {rule['RuleName']}: {resp.text}")
-        print(f"Error: {rule['RuleName']} not created ({resp.text})")
-    else:
-        logging.info(f"Rule created: {rule['RuleName']}")
-        print(f"Rule created: {rule['RuleName']}")
+def read_plan(csv_path):
+    """Validate all rows before any API write and preserve CSV order."""
+    policies = {}
+    with open(csv_path, newline="", encoding="utf-8-sig") as stream:
+        reader = csv.DictReader(
+            line for line in stream if line.strip() and not line.lstrip().startswith("#")
+        )
+        if not reader.fieldnames or not REQUIRED_COLUMNS.issubset(reader.fieldnames):
+            missing = REQUIRED_COLUMNS - set(reader.fieldnames or [])
+            raise ValueError(f"CSV is missing columns: {', '.join(sorted(missing))}")
+        for line_number, raw in enumerate(reader, start=2):
+            if None in raw:
+                raise ValueError(f"Extra CSV fields near row {line_number}")
+            row = {key: (value or "").strip() for key, value in raw.items()}
+            section = row["Section"]
+            name = row["RuleName"]
+            action = row["Action"].upper()
+            direction = row["Direction"].upper()
+            if not section or not name:
+                raise ValueError(f"Section and RuleName are required near row {line_number}")
+            if action not in VALID_ACTIONS or direction not in VALID_DIRECTIONS:
+                raise ValueError(f"Invalid action or direction near row {line_number}")
+            policy = policies.setdefault(
+                section,
+                {"id": object_id(section), "name": section, "rules": []},
+            )
+            rule_id = object_id(name)
+            if any(rule["id"] == rule_id for rule in policy["rules"]):
+                raise ValueError(f"Duplicate rule {name!r} in section {section!r}")
+            domain_groups = "/infra/domains/default/groups/"
+            body = {
+                "id": rule_id,
+                "resource_type": "Rule",
+                "display_name": name,
+                "description": row["Notes"],
+                "source_groups": paths(row["Source"], domain_groups),
+                "destination_groups": paths(row["Destination"], domain_groups),
+                "services": paths(row["Service"], "/infra/services/"),
+                "scope": paths(row["AppliedTo"], domain_groups),
+                "action": action,
+                "direction": direction,
+                "logged": row["Logging"].lower() in {"1", "true", "yes"},
+                "disabled": False,
+                "sequence_number": (len(policy["rules"]) + 1) * 10,
+            }
+            policy["rules"].append(body)
+    if not policies:
+        raise ValueError("CSV contains no rules")
+    return list(policies.values())
 
-def main():
-    # Read CSV, skipping comments
-    rules = []
-    with open(CSV_FILE,"r") as f:
-        reader = csv.DictReader(line for line in f if not line.startswith("#"))
-        for row in reader:
-            rules.append(row)
-    # Group by section
-    by_section = {}
-    for rule in rules:
-        by_section.setdefault(rule["Section"], []).append(rule)
-    # Create rules in each section
-    for section, ruleset in by_section.items():
-        print(f"Processing section: {section}")
-        sec_id = get_or_create_section(section)
-        for rule in ruleset:
-            create_rule(sec_id, rule)
-    print("DFW rule import complete.")
+
+def apply_plan(plan):
+    from dotenv import load_dotenv
+    import requests
+
+    load_dotenv()
+    server = os.getenv("NSXT_SERVER")
+    user = os.getenv("NSXT_USER")
+    password = os.getenv("NSXT_PASS")
+    if not all((server, user, password)):
+        raise ValueError("Set NSXT_SERVER, NSXT_USER, and NSXT_PASS")
+    if "/" in server or "://" in server:
+        raise ValueError("NSXT_SERVER must be a hostname, without a URL path")
+
+    session = requests.Session()
+    session.auth = (user, password)
+    session.verify = os.getenv("NSXT_CA_BUNDLE") or True
+    base = f"https://{server}/policy/api/v1/infra/domains/default/security-policies"
+    try:
+        references = {
+            reference
+            for policy in plan
+            for rule in policy["rules"]
+            for field in ("source_groups", "destination_groups", "services", "scope")
+            for reference in rule[field]
+            if reference != "ANY"
+        }
+        for reference in sorted(references):
+            response = session.get(f"https://{server}/policy/api/v1{reference}", timeout=30)
+            response.raise_for_status()
+
+        existing = {}
+        for policy in plan:
+            policy_url = f"{base}/{policy['id']}"
+            response = session.get(policy_url, timeout=30)
+            if response.status_code == 404:
+                existing[policy["id"]] = False
+            else:
+                response.raise_for_status()
+                if response.json().get("category") != "Application":
+                    raise ValueError(f"Existing policy {policy['name']!r} is not Application")
+                existing[policy["id"]] = True
+
+        for index, policy in enumerate(plan, start=1):
+            policy_url = f"{base}/{policy['id']}"
+            if not existing[policy["id"]]:
+                response = session.put(
+                    policy_url,
+                    json={
+                        "id": policy["id"],
+                        "resource_type": "SecurityPolicy",
+                        "display_name": policy["name"],
+                        "category": "Application",
+                        "stateful": True,
+                        "sequence_number": index * 1000,
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+            for rule in policy["rules"]:
+                rule_url = f"{policy_url}/rules/{rule['id']}"
+                response = session.patch(rule_url, json=rule, timeout=30)
+                response.raise_for_status()
+                print(f"Applied {policy['name']} / {rule['display_name']}")
+    finally:
+        session.close()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", type=Path, default=DEFAULT_CSV)
+    parser.add_argument("--apply", action="store_true", help="Write the validated plan to NSX")
+    args = parser.parse_args(argv)
+    try:
+        plan = read_plan(args.csv)
+        for policy in plan:
+            print(f"Policy {policy['name']} ({policy['id']})")
+            for rule in policy["rules"]:
+                print(f"  {rule['sequence_number']}: {rule['display_name']} [{rule['action']}]")
+        if args.apply:
+            apply_plan(plan)
+        else:
+            print("Preview only. Rerun with --apply to write these rules.")
+        return 0
+    except (OSError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,3 +1,8 @@
+# Required published cmdlets are checked before credentials are requested.
+$requiredCommands = @('Get-SrmRecoveryPlan', 'Invoke-SrmRecoveryPlan')
+$unavailableCommands = @($requiredCommands | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) })
+if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable: $($unavailableCommands -join ', '). This example needs an implemented SRM or NSX API adapter for the installed product version." }
+
 <#
 .SYNOPSIS
     Requests approval via email before running any SRM Recovery Plan.
@@ -6,7 +11,7 @@
     Emails DR team for approval; executes plan only after approval received.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: SRM 8.x / Live Site Recovery 9.0.2.x with VMware.PowerCLI 13.x. See docs/compatibility.md.
     Configure SMTP below.
 #>
 $smtpServer = "smtp.yourdomain.com"

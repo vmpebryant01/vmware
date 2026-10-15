@@ -1,80 +1,109 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
+"""Preview or remove vSphere snapshots older than a specified age.
+
+Author: Paul Bryant
+
+Requires pyvmomi and python-dotenv. Set VCENTER_SERVER, VCENTER_USER, and
+VCENTER_PASS in the environment or a local .env file. Certificate validation
+is enabled; set VCENTER_CA_BUNDLE to a trusted CA bundle if needed.
 """
-remove_old_snapshots.py
 
-Deletes VM snapshots older than a given number of days.
-Requires: requests, python-dotenv
+import argparse
+from datetime import datetime, timedelta, timezone
+import os
+import ssl
+import sys
 
-WARNING: Deletion is destructive! Use with caution.
-"""
 
-import os, sys, logging, requests
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
+def iter_snapshot_nodes(nodes):
+    """Yield each snapshot tree node, including nested snapshots."""
+    for node in nodes or []:
+        yield node
+        yield from iter_snapshot_nodes(node.childSnapshotList)
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
 
-logging.basicConfig(filename='remove_old_snapshots.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
-
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
-
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
-
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VM fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
-
-def get_snapshots(vm_id):
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm/{vm_id}/snapshots"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        return []
-    return resp.json().get('value', [])
-
-def delete_snapshot(vm_id, snapshot_id):
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm/{vm_id}/snapshots/{snapshot_id}"
-    resp = session.delete(url)
-    return resp.status_code == 200
-
-def main():
-    get_session()
-    days = int(input("Delete snapshots older than how many days? "))
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    vms = get_vms()
-    count = 0
+def older_snapshots(vms, cutoff):
+    """Return VM and snapshot pairs whose creation time precedes cutoff."""
+    candidates = []
     for vm in vms:
-        for snap in get_snapshots(vm['vm']):
-            snap_time = snap.get('created', "")
+        snapshot_info = getattr(vm, "snapshot", None)
+        if snapshot_info is None:
+            continue
+        for node in iter_snapshot_nodes(snapshot_info.rootSnapshotList):
+            created = node.createTime
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if created < cutoff:
+                candidates.append((vm, node))
+    return candidates
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--days", type=int, required=True, help="Minimum snapshot age")
+    parser.add_argument("--vm", help="Limit to one VM name")
+    parser.add_argument("--all-vms", action="store_true", help="Allow changes across all VMs")
+    parser.add_argument("--apply", action="store_true", help="Delete listed snapshots")
+    args = parser.parse_args(argv)
+    if args.days < 1:
+        parser.error("--days must be at least 1")
+    if args.apply and not (args.vm or args.all_vms):
+        parser.error("--apply requires --vm or --all-vms")
+    if args.vm and args.all_vms:
+        parser.error("choose either --vm or --all-vms")
+    return args
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    from dotenv import load_dotenv
+    from pyVim.connect import Disconnect, SmartConnect
+    from pyVim.task import WaitForTask
+    from pyVmomi import vim
+
+    load_dotenv()
+    server = os.getenv("VCENTER_SERVER")
+    user = os.getenv("VCENTER_USER")
+    password = os.getenv("VCENTER_PASS")
+    if not all((server, user, password)):
+        raise SystemExit("Set VCENTER_SERVER, VCENTER_USER, and VCENTER_PASS")
+
+    context = ssl.create_default_context(cafile=os.getenv("VCENTER_CA_BUNDLE") or None)
+    service = SmartConnect(host=server, user=user, pwd=password, sslContext=context)
+    try:
+        view = service.content.viewManager.CreateContainerView(
+            service.content.rootFolder, [vim.VirtualMachine], True
+        )
+        try:
+            vms = list(view.view)
+        finally:
+            view.Destroy()
+        if args.vm:
+            vms = [vm for vm in vms if vm.name == args.vm]
+            if len(vms) != 1:
+                raise SystemExit(f"Expected exactly one VM named {args.vm!r}; found {len(vms)}")
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=args.days)
+        candidates = older_snapshots(vms, cutoff)
+        for vm, node in candidates:
+            print(f"{vm.name}: {node.name} ({node.createTime.isoformat()})")
+        print(f"Found {len(candidates)} snapshots older than {args.days} days")
+        if not args.apply:
+            print("Preview only. Rerun with --apply and a VM scope to delete them.")
+            return 0
+
+        failures = 0
+        for vm, node in candidates:
             try:
-                snap_date = datetime.strptime(snap_time[:19], "%Y-%m-%dT%H:%M:%S")
-            except Exception:
-                continue
-            if snap_date < cutoff:
-                ok = delete_snapshot(vm['vm'], snap['snapshot'])
-                if ok:
-                    logging.info(f"Deleted snapshot {snap['name']} for VM {vm['name']}")
-                    count += 1
-                else:
-                    logging.error(f"Failed to delete {snap['name']} for VM {vm['name']}")
-    logging.info(f"Deleted {count} old snapshots.")
+                WaitForTask(node.snapshot.RemoveSnapshot_Task(removeChildren=False))
+                print(f"Removed {node.name} from {vm.name}")
+            except Exception as exc:
+                failures += 1
+                print(f"Failed to remove {node.name} from {vm.name}: {exc}", file=sys.stderr)
+        return 1 if failures else 0
+    finally:
+        Disconnect(service)
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

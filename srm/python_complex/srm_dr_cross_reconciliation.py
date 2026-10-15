@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 srm_dr_cross_reconciliation.py
 
@@ -34,6 +35,7 @@ def fetch_backup_vms():
     return {"FinApp01", "Web01"}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm, vc, bkp = fetch_srm_vms(), fetch_vcenter_vms(), fetch_backup_vms()
     all_vms = sorted(srm | vc | bkp)
     rows = []

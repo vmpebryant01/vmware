@@ -7,8 +7,15 @@
     Logs and exports results.
 
 .NOTES
-    PowerCLI >=13.0 and relevant modules required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference).
+    Requires a separately implemented SRM or replication command adapter.
 #>
+Import-Module VMware.VimAutomation.Srm -ErrorAction Stop
+$requiredCommands = @('Get-SrmProtectedVM', 'Get-SpbmReplicatedVM')
+$unavailableCommands = @($requiredCommands | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) })
+if ($unavailableCommands.Count -gt 0) {
+    throw "Required replication commands are unavailable: $($unavailableCommands -join ', '). Implement an adapter for the installed product version."
+}
 $vcServer = Read-Host "Enter vCenter FQDN/IP"
 $vcUser = Read-Host "Enter vCenter username"
 $vcPass = Read-Host "Enter vCenter password" -AsSecureString
@@ -18,15 +25,14 @@ function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | 
 Write-Log "Finding VMs with snapshots and replication..."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
-    Import-Module VMware.VimAutomation.Srm -ErrorAction SilentlyContinue
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 
 try {
     $repVMs = @()
-    try { $repVMs += Get-SrmProtectedVM | Select-Object -ExpandProperty Name } catch {}
-    try { $repVMs += Get-SpbmReplicatedVM | Select-Object -ExpandProperty Name } catch {}
+    $repVMs += Get-SrmProtectedVM -ErrorAction Stop | Select-Object -ExpandProperty Name
+    $repVMs += Get-SpbmReplicatedVM -ErrorAction Stop | Select-Object -ExpandProperty Name
 
     $report = foreach ($vm in Get-VM | Where-Object { (Get-Snapshot -VM $_ -ErrorAction SilentlyContinue) }) {
         $rep = $repVMs -contains $vm.Name

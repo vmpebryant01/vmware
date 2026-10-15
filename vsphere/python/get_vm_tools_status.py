@@ -1,56 +1,41 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
+"""Export VMware Tools version and running status for VMs.
+
+Author: Paul Bryant
 """
-get_vm_tools_status.py
 
-Lists all VMs and their VMware Tools status and version.
-Requires: requests, python-dotenv
-"""
+import argparse
+import csv
 
-import os, sys, csv, logging, requests
-from dotenv import load_dotenv
+from vsphere_inventory import vcenter_vms
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
 
-logging.basicConfig(filename='get_vm_tools_status.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
+def tools_rows(vms):
+    rows = []
+    for vm in vms:
+        guest = getattr(vm, "guest", None)
+        summary_guest = getattr(getattr(vm, "summary", None), "guest", None)
+        rows.append((
+            vm.name,
+            getattr(guest, "toolsVersion", None) or "",
+            getattr(summary_guest, "toolsVersionStatus2", None) or "",
+            getattr(summary_guest, "toolsRunningStatus", None) or "",
+        ))
+    return sorted(rows)
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--csv", default="vm_tools_status.csv")
+    args = parser.parse_args(argv)
+    with vcenter_vms() as vms:
+        rows = tools_rows(vms)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Name", "ToolsVersion", "VersionStatus", "RunningStatus"])
+        writer.writerows(rows)
+    print(f"Exported tools status for {len(rows)} VMs to {args.csv}")
 
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VM fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
-
-def main():
-    get_session()
-    vms = get_vms()
-    outcsv = "vm_tools_status.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Name", "ToolsStatus", "ToolsVersion"])
-        for vm in vms:
-            # To get tools status, need extra /rest/vcenter/vm/{vm}/guest/identity or similar calls.
-            # Placeholder for real call (implement with pyVmomi for deep detail)
-            writer.writerow([vm.get("name", ""), "", ""])
-    logging.info(f"Exported VMware Tools status for {len(vms)} VMs to {outcsv}")
 
 if __name__ == "__main__":
     main()

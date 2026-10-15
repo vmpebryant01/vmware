@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """
 nsxt_segment_and_vlan_inventory_sync.py
 
@@ -15,12 +16,11 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_segment_vlan_sync.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def get_segments():
     url = f"https://{NSXT_SERVER}/policy/api/v1/infra/segments"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     return r.json().get("results", [])
 
 def main():
@@ -28,10 +28,10 @@ def main():
     rows = []
     for s in segs:
         rows.append({
-            "Segment": s.get("display_name", ""),
-            "VLAN": s.get("vlan_ids", [""])[0] if "vlan_ids" in s else "",
-            "TZ": s.get("transport_zone_path", ""),
-            "PortGroup": s.get("advanced_config", {}).get("uplink_teaming_policy_name", "")
+            "Segment": s.get("display_name", "", timeout=30),
+            "VLAN": s.get("vlan_ids", [""], timeout=30)[0] if "vlan_ids" in s else "",
+            "TZ": s.get("transport_zone_path", "", timeout=30),
+            "PortGroup": s.get("advanced_config", {}, timeout=30).get("uplink_teaming_policy_name", "")
         })
     pd.DataFrame(rows).to_excel("nsxt_segment_vlan_inventory.xlsx", index=False)
     logging.info("Segment/VLAN inventory exported.")

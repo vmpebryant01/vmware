@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 audit_user_permissions.py
 
@@ -22,6 +23,7 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
 
 # REST API cannot fetch permissions directly; placeholder for pyVmomi solution.
 def main():
+    raise RuntimeError("This example has no live data integration; a report would contain placeholder values.")
     outcsv = "user_permissions.csv"
     with open(outcsv, "w", newline="") as f:
         writer = csv.writer(f)

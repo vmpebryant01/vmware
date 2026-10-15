@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 export_vcenter_events.py
 
@@ -21,30 +22,31 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     logging.error("Missing environment variables.")
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
-session.verify = False
 
 def get_session():
     resp = session.post(
         f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
+        auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
     if resp.status_code != 200:
         logging.error(f"Login failed: {resp.text}")
         sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
+    token = resp.json()['value']
+    session.headers['vmware-api-session-id'] = token
+    return token
 
 def get_events():
     # vSphere REST API has very limited event support; pyVmomi provides full access.
     # Here, we fetch only recent events (placeholder).
     url = f"https://{VCENTER_SERVER}/rest/vcenter/event"
-    resp = session.get(url)
+    resp = session.get(url, timeout=30)
     if resp.status_code != 200:
         logging.error(f"Event fetch failed: {resp.text}")
         return []
     return resp.json().get('value', [])
 
 def main():
+    raise RuntimeError("The event endpoint used here is not verified for this vCenter API version.")
     get_session()
     outcsv = "vcenter_events.csv"
     events = get_events()

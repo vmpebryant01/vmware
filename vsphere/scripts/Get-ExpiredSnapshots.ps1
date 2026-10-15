@@ -7,7 +7,7 @@
     Output to CSV and logs all steps.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Adjust $MaxAgeDays as needed.
 #>
 
@@ -22,7 +22,7 @@ function Write-Log ($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" |
 Write-Log "Starting expired snapshot report."
 
 try {
-    Connect-VIServer -Server $vcServer -User $vcUser -Password $vcPass -ErrorAction Stop
+    Connect-VIServer -Server $vcServer -Credential ([pscredential]::new($vcUser, $vcPass)) -ErrorAction Stop
     Write-Log "Connected to $vcServer"
 } catch { Write-Log "ERROR: $($_.Exception.Message)"; throw }
 

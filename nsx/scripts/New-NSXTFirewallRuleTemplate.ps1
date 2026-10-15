@@ -6,7 +6,7 @@
     Outputs a CSV template for new DFW or Gateway rules, ready for mass import/automation.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
 #>
 $template = @"
 Section,RuleName,Source,Destination,Service,Action,Direction,Logging

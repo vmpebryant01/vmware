@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 get_srm_failover_history.py
 
@@ -24,6 +25,7 @@ def get_failover_history():
     return [{"plan": "AppRecovery", "type": "Test", "date": "2024-07-01", "result": "Success"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     history = get_failover_history()
     outcsv = "srm_failover_history.csv"

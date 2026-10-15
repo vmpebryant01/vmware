@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 monitor_vcenter_api_health.py
 
@@ -17,14 +18,12 @@ logging.basicConfig(filename='monitor_vcenter_api_health.log', level=logging.INF
 if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
 
 def main():
     session = requests.Session()
-    session.verify = False
     start = time.time()
     try:
-        resp = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS))
+        resp = session.post(f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session", auth=(VCENTER_USER, VCENTER_PASS), timeout=30)
         elapsed = time.time() - start
         if resp.status_code == 200:
             logging.info(f"vCenter API healthy, login in {elapsed:.2f}s")

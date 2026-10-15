@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """
 nsxt_daily_compliance_report.py
 
@@ -23,19 +24,17 @@ logging.basicConfig(filename='nsxt_daily_compliance_report.log', level=logging.I
 if not (NSXT_SERVER and NSXT_USER and NSXT_PASS and EMAIL_TO and EMAIL_FROM and SMTP_SERVER):
     sys.exit("Check .env for NSXT and SMTP vars.")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
 session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
 
 def get_nodes():
     url = f"https://{NSXT_SERVER}/api/v1/transport-nodes"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def get_alarms():
     url = f"https://{NSXT_SERVER}/api/v1/events"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def main():

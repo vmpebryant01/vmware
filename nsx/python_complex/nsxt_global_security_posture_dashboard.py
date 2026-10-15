@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """
 nsxt_global_security_posture_dashboard.py
 
@@ -15,11 +16,10 @@ NSXT_SERVER, NSXT_USER, NSXT_PASS = [os.getenv(x) for x in ("NSXT_SERVER","NSXT_
 logging.basicConfig(filename='nsxt_security_dashboard.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]): sys.exit("Check .env")
 
-session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS); session.verify = False
-requests.packages.urllib3.disable_warnings()
+session = requests.Session(); session.auth = (NSXT_USER, NSXT_PASS)
 
 def fetch(endpoint):
-    r = session.get(f"https://{NSXT_SERVER}/{endpoint}")
+    r = session.get(f"https://{NSXT_SERVER}/{endpoint}", timeout=30)
     return r.json().get("results", []) if r.status_code == 200 else []
 
 def main():

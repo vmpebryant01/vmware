@@ -1,3 +1,4 @@
+throw 'NSX active alarm retrieval is not implemented for this example.'
 <#
 .SYNOPSIS
     Exports all active alarms/events on NSX-T managers and nodes.
@@ -6,7 +7,7 @@
     Reports alarm type, severity, resource, and time for real-time monitoring.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"
 $nsxUser   = Read-Host "NSX username"

@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """
 sync_vm_tags_to_cmdb.py
 
@@ -20,6 +21,7 @@ if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
     sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
 def main():
+    raise RuntimeError("This example has no live data integration; a report would contain placeholder values.")
     cmdb_url = input("Enter CMDB REST endpoint URL: ")
     outcsv = "cmdb_tag_sync.csv"
     with open(outcsv, "w", newline="") as f:

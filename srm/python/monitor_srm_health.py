@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 monitor_srm_health.py
 
@@ -26,6 +27,7 @@ def get_health_status():
     return {"connection": "OK", "recent_errors": 0, "last_error": ""}
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     health = get_health_status()
     with open("srm_health.txt", "w") as f:

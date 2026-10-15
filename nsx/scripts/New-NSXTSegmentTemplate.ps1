@@ -6,7 +6,7 @@
     Exports a sample template with all required segment fields for automation.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
 #>
 $template = @"
 DisplayName,TransportZone,ReplicationMode,VlanId,Subnet

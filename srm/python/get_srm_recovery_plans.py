@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 get_srm_recovery_plans.py
 
@@ -24,6 +25,7 @@ def get_recovery_plans():
     return [{"name": "AppRecovery", "status": "Ready"}, {"name": "DBRecovery", "status": "NotReady"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     plans = get_recovery_plans()
     outcsv = "srm_recovery_plans.csv"

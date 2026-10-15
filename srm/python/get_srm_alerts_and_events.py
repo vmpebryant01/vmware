@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 get_srm_alerts_and_events.py
 
@@ -24,6 +25,7 @@ def get_alerts_events():
     return [{"time": "2024-07-02 08:00", "type": "Warning", "text": "RPO exceeded on DBVM01"}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     alerts = get_alerts_events()
     outcsv = "srm_alerts_events.csv"

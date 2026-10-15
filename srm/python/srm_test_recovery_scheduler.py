@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 srm_test_recovery_scheduler.py
 
@@ -27,6 +28,7 @@ def run_test(plan_name):
     print(f"Tested recovery plan: {plan_name}")
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     import schedule
     srm_login()
     plans = ["AppRecovery", "DBRecovery"]

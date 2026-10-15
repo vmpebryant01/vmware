@@ -1,3 +1,4 @@
+# Target: SRM 8.x / Live Site Recovery 9.0.2.x concepts; API integration incomplete. See docs/compatibility.md.
 """
 verify_srm_vm_mappings.py
 
@@ -25,6 +26,7 @@ def get_vm_mappings():
             {"vm": "DBVM01", "group": "DBGroup", "mapped": False}]
 
 def main():
+    raise RuntimeError("Live Site Recovery API integration is not implemented for this example.")
     srm_login()
     mappings = get_vm_mappings()
     outcsv = "srm_vm_mappings.csv"

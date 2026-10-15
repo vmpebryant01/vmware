@@ -1,73 +1,48 @@
-"""
-get_expired_snapshots.py
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
+"""Export vSphere VM snapshots older than a specified number of days.
 
-Finds all VM snapshots older than a given threshold (days).
-Exports to CSV.
-
-Requires: requests, python-dotenv
+Author: Paul Bryant
 """
 
-import os, sys, csv, logging, requests
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
+import argparse
+import csv
+from datetime import datetime, timedelta, timezone
 
-load_dotenv()
-VCENTER_SERVER = os.getenv("VCENTER_SERVER")
-VCENTER_USER = os.getenv("VCENTER_USER")
-VCENTER_PASS = os.getenv("VCENTER_PASS")
+from vsphere_inventory import iter_snapshot_nodes, vcenter_vms
 
-logging.basicConfig(filename='get_expired_snapshots.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-if not all([VCENTER_SERVER, VCENTER_USER, VCENTER_PASS]):
-    logging.error("Missing environment variables.")
-    sys.exit("Check .env for VCENTER_SERVER, VCENTER_USER, VCENTER_PASS.")
 
-requests.packages.urllib3.disable_warnings()
-session = requests.Session()
-session.verify = False
+def expired_rows(vms, cutoff):
+    rows = []
+    for vm in vms:
+        snapshot_info = getattr(vm, "snapshot", None)
+        if snapshot_info is None:
+            continue
+        for node in iter_snapshot_nodes(snapshot_info.rootSnapshotList):
+            created = node.createTime
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if created < cutoff:
+                rows.append((vm.name, node.name, node.createTime.isoformat()))
+    return sorted(rows)
 
-def get_session():
-    resp = session.post(
-        f"https://{VCENTER_SERVER}/rest/com/vmware/cis/session",
-        auth=(VCENTER_USER, VCENTER_PASS))
-    if resp.status_code != 200:
-        logging.error(f"Login failed: {resp.text}")
-        sys.exit("Failed to login to vCenter.")
-    return resp.json()['value']
 
-def get_vms():
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        logging.error(f"VM fetch failed: {resp.text}")
-        sys.exit("Failed to fetch VMs.")
-    return resp.json()['value']
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--days", type=int, required=True)
+    parser.add_argument("--csv", default="expired_snapshots.csv")
+    args = parser.parse_args(argv)
+    if args.days < 1:
+        parser.error("--days must be at least 1")
 
-def get_snapshots(vm_id):
-    url = f"https://{VCENTER_SERVER}/rest/vcenter/vm/{vm_id}/snapshots"
-    resp = session.get(url)
-    if resp.status_code != 200:
-        return []
-    return resp.json().get('value', [])
-
-def main():
-    get_session()
-    days = int(input("Enter days threshold for expired snapshots: "))
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    vms = get_vms()
-    outcsv = "expired_snapshots.csv"
-    with open(outcsv, "w", newline="") as f:
-        writer = csv.writer(f)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=args.days)
+    with vcenter_vms() as vms:
+        rows = expired_rows(vms, cutoff)
+    with open(args.csv, "w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
         writer.writerow(["VM", "Snapshot", "Created"])
-        for vm in vms:
-            for snap in get_snapshots(vm['vm']):
-                snap_time = snap.get('created', "")
-                try:
-                    snap_date = datetime.strptime(snap_time[:19], "%Y-%m-%dT%H:%M:%S")
-                except Exception:
-                    continue
-                if snap_date < cutoff:
-                    writer.writerow([vm['name'], snap.get('name', ""), snap_time])
-    logging.info(f"Exported expired snapshots to {outcsv}")
+        writer.writerows(rows)
+    print(f"Exported {len(rows)} snapshots older than {args.days} days to {args.csv}")
+
 
 if __name__ == "__main__":
     main()

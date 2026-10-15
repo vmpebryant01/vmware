@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """
 nsxt_full_config_audit_and_drift_report.py
 
@@ -20,14 +21,12 @@ logging.basicConfig(filename='nsxt_full_config_audit.log', level=logging.INFO, f
 if not all([NSXT_SERVER, NSXT_USER, NSXT_PASS]):
     sys.exit("Check .env for NSXT_SERVER, NSXT_USER, NSXT_PASS")
 
-requests.packages.urllib3.disable_warnings()
 session = requests.Session()
 session.auth = (NSXT_USER, NSXT_PASS)
-session.verify = False
 
 def fetch_config(endpoint):
     url = f"https://{NSXT_SERVER}/{endpoint}"
-    r = session.get(url)
+    r = session.get(url, timeout=30)
     if r.status_code != 200:
         logging.error(f"Failed to fetch {endpoint}: {r.text}")
         return []
