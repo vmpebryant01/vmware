@@ -12,13 +12,35 @@ import ssl
 import sys
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 
 from vcf9.sddc_inventory import HOST_PATTERN, SddcClient, ensure_vcf91, write_csv
 
 PAGE_SIZE = 100
 MAX_PAGES = 1000
+ID_PATTERN = re.compile(r"[A-Za-z0-9_.:-]+\Z")
+
+
+def safe_path_id(value: str, label: str) -> str:
+    if not isinstance(value, str) or not ID_PATTERN.fullmatch(value) or value in (".", ".."):
+        raise ValueError(f"--{label} must be a simple identifier")
+    return quote(value, safe="")
+
+
+def select_scalar(item: dict, field: str, args) -> object:
+    """Select one explicitly approved CSV field without dumping nested payloads."""
+    if field.startswith("$"):
+        return getattr(args, field[1:])
+    if field.startswith("#"):
+        value = item.get(field[1:])
+        return len(value) if isinstance(value, list) else None
+    value: object = item
+    for key in field.split("."):
+        if not isinstance(value, dict):
+            return None
+        value = value.get(key)
+    return value if isinstance(value, (str, int, float, bool)) or value is None else None
 
 
 class NoRedirect(HTTPRedirectHandler):

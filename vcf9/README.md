@@ -2,6 +2,8 @@
 
 By Paul Bryant
 
+The [additional VCF 9.1.1 reports](ADDITIONAL_REPORTS.md) add 5 NSX, 5 Operations, 5 SDDC Manager, and 15 Protection and Recovery commands.
+
 These examples collect a small operational baseline without changing infrastructure. They target the VCF 9.1.x product line and VCF PowerCLI 9.1.x. The original repository examples remain scoped to their earlier product generations.
 
 | Report | Data collected | Tool |
