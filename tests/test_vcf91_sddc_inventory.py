@@ -80,6 +80,18 @@ class SddcInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "Missing pagination metadata"):
             client.get_pages("/v1/hosts")
 
+    def test_pagination_preserves_server_side_time_filter(self):
+        seen = []
+
+        def opener(request, timeout, context):
+            seen.append(request.full_url)
+            return FakeResponse({"elements": [], "pageMetadata": {"totalPages": 1}})
+
+        client = inventory.SddcClient("manager.example.com", opener=opener)
+        client.get_pages("/v1/tasks", filters={"completedAfter": 123456})
+        self.assertIn("completedAfter=123456", seen[0])
+        self.assertIn("pageNumber=0", seen[0])
+
 
 if __name__ == "__main__":
     unittest.main()

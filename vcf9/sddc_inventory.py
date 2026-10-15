@@ -22,6 +22,8 @@ HOST_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*$")
 
 def safe_cell(value: object) -> str:
     """Keep spreadsheet applications from interpreting inventory text as formulas."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return str(value)
     result = "" if value is None else str(value)
     if result.lstrip().startswith(("=", "+", "-", "@")):
         return "'" + result
@@ -68,13 +70,15 @@ class SddcClient:
             raise RuntimeError("SDDC Manager did not return an access token")
         self.access_token = result["accessToken"]
 
-    def get_pages(self, path: str) -> list[dict]:
+    def get_pages(self, path: str, *, filters: dict[str, int | str] | None = None) -> list[dict]:
         rows: list[dict] = []
         for page_number in range(MAX_PAGES):
-            query = urlencode({"pageNumber": page_number, "pageSize": PAGE_SIZE})
+            query = urlencode({**(filters or {}), "pageNumber": page_number, "pageSize": PAGE_SIZE})
             result = self.request_json("GET", f"{path}?{query}")
             if not isinstance(result, dict) or not isinstance(result.get("elements"), list):
                 raise RuntimeError(f"Unexpected response from {path}")
+            if not all(isinstance(item, dict) for item in result["elements"]):
+                raise RuntimeError(f"Unexpected list item from {path}")
             rows.extend(result["elements"])
             metadata = result.get("pageMetadata")
             if not isinstance(metadata, dict) or not isinstance(metadata.get("totalPages"), int):
@@ -87,7 +91,7 @@ class SddcClient:
         raise RuntimeError(f"Page limit reached for {path}")
 
 
-def collect(client: SddcClient) -> dict[str, object]:
+def ensure_vcf91(client: SddcClient) -> dict:
     appliance = client.request_json("GET", "/v1/system/appliance-info")
     if not isinstance(appliance, dict):
         raise RuntimeError("Unexpected appliance information response")
@@ -96,6 +100,11 @@ def collect(client: SddcClient) -> dict[str, object]:
         raise RuntimeError(f"Expected SDDC Manager 9.1.x; reported version: {version or 'unknown'}")
     if appliance.get("role") != "SddcManager":
         raise RuntimeError("The target is not an SDDC Manager appliance")
+    return appliance
+
+
+def collect(client: SddcClient) -> dict[str, object]:
+    appliance = ensure_vcf91(client)
     return {
         "appliance": appliance,
         "domains": client.get_pages("/v1/domains"),
