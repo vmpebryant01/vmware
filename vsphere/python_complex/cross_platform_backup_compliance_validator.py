@@ -2,9 +2,8 @@
 """
 cross_platform_backup_compliance_validator.py
 
-Connects to multiple backup platforms (Veeam, Rubrik, Commvault, etc.) and vCenter.
-Correlates VMs with last successful backup, flags those out of policy, tags non-compliant VMs.
-Exports a comprehensive backup compliance report.
+Draft for correlating vCenter inventory with backup records. The backup vendor
+integrations are not implemented, so the script stops before creating a report.
 
 Requires: python-dotenv, requests, (backup vendor SDKs)
 """
