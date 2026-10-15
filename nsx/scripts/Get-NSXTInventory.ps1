@@ -5,11 +5,12 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
 
 <#
 .SYNOPSIS
-    Comprehensive NSX-T inventory report.
+    Example NSX-T inventory export.
 
 .DESCRIPTION
-    Exports all segments, routers, edge nodes, groups, and firewall rules.
-    Consolidates into a single CSV per object type.
+    Intended to export segments, routers, edge nodes, groups, and firewall rules
+    to separate CSV files. The required cmdlets are unavailable in the published
+    module, so this example stops until an API adapter is implemented.
 
 .NOTES
     Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
@@ -20,7 +21,7 @@ $nsxPass   = Read-Host "NSX password" -AsSecureString
 
 $LogPath = "Get-NSXTInventory.log"
 function Write-Log($msg) { $timestamp = Get-Date -Format o; "$timestamp $msg" | Out-File $LogPath -Append }
-Write-Log "Starting comprehensive NSX-T inventory..."
+Write-Log "Starting NSX-T inventory export..."
 
 try {
     Import-Module VMware.VimAutomation.Nsx.T -ErrorAction Stop
