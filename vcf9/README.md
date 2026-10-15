@@ -12,6 +12,44 @@ These examples collect a small operational baseline without changing infrastruct
 | [Aged snapshots](Get-Vcf91SnapshotReport.ps1) | VM, snapshot name, creation time, age, size | VCF PowerCLI |
 | [Cluster host builds](Get-Vcf91ClusterHostBuilds.ps1) | ESXi versions and builds within each cluster | VCF PowerCLI |
 
+## Ten additional VCF 9.1.1 reports
+
+These commands are read-only examples for a VCF 9.1.1 deployment. Each module writes one CSV file. They use documented GET endpoints, except for the existing SDDC Manager token request, and select only the columns listed below. Run them from the repository root with Python 3.11 or later.
+
+| Area | Module | Report |
+| --- | --- | --- |
+| Fleet | `vcf9.fleet.management_components` | Management component FQDNs and deployment states |
+| Fleet | `vcf9.fleet.services` | SDDC Manager service versions and states |
+| Fleet | `vcf9.fleet.depot_sync` | Depot synchronization state and last completion time |
+| Operations | `vcf9.operations.alerts` | Alert IDs, severity, state, and timestamps |
+| Operations | `vcf9.operations.adapters` | Adapter collection and heartbeat metadata |
+| Operations | `vcf9.operations.resources` | Inventory for one selected resource kind |
+| Automation | `vcf9.automation.deployments` | Deployment and last request status |
+| Automation | `vcf9.automation.catalog` | Catalog item availability and project count |
+| NSX | `vcf9.nsx.gateways` | Tier-0 and Tier-1 gateway inventory |
+| NSX | `vcf9.nsx.security_policies` | Distributed firewall policy inventory and rule counts |
+
+Fleet commands prompt for an SDDC Manager password and verify that the appliance reports a 9.1.1 version. Operations commands require a valid VCF Operations session token in the process environment as `VCF_OPS_TOKEN`; the request uses the documented `OpsToken` authorization scheme. For a VCF SSO access token, set the same environment variable and add `--token-scheme Bearer`. Automation commands require a valid JWT access token as `VCF_AUTOMATION_TOKEN`; the request uses Bearer authorization. Obtain tokens through your site's approved sign-in process and do not save them in the repository. NSX commands prompt for a password and use HTTP Basic authentication over verified TLS; this may be disabled by site policy. Use read-only accounts where possible. All four target types accept `--ca-bundle` for a private issuing CA, and no command disables certificate checks.
+
+```powershell
+python -m vcf9.fleet.management_components --host sddc.example.com --username report-user --output-dir reports/fleet/components
+python -m vcf9.fleet.services --host sddc.example.com --username report-user --output-dir reports/fleet/services
+python -m vcf9.fleet.depot_sync --host sddc.example.com --username report-user --output-dir reports/fleet/depot
+python -m vcf9.operations.alerts --host ops.example.com --output-dir reports/operations/alerts
+python -m vcf9.operations.adapters --host ops.example.com --output-dir reports/operations/adapters
+python -m vcf9.operations.resources --host ops.example.com --resource-kind VirtualMachine --output-dir reports/operations/resources
+python -m vcf9.automation.deployments --host automation.example.com --output-dir reports/automation/deployments
+python -m vcf9.automation.catalog --host automation.example.com --output-dir reports/automation/catalog
+python -m vcf9.nsx.gateways --host nsx.example.com --username report-user --output-dir reports/nsx/gateways
+python -m vcf9.nsx.security_policies --host nsx.example.com --username report-user --domain-id default --output-dir reports/nsx/policies
+```
+
+Replace the example hosts and NSX domain ID with site values. The Operations resource kind is required to limit inventory scope. Pagination has a 1000-page safety limit, and incomplete or malformed responses fail rather than silently producing partial CSVs. CSV values are escaped against spreadsheet formula interpretation. Output includes infrastructure names and IDs; store it in a restricted location. Repeating a command in the same output directory replaces that command's CSV. The depot report records whether an error message exists but omits its contents; the Automation reports omit deployment inputs, outputs, user email addresses, and catalog schemas. The catalog's visible project count is blank when the API omits project IDs. The NSX policy report lists policies and counts, not individual rules or an assessment of firewall effectiveness.
+
+The SDDC Manager version check does not establish the version of the other components. The Operations, Automation, and NSX examples do not have a version preflight; point them only at the intended 9.1.1 components. Product permissions and response shapes may vary by deployment and patch level. These new reports have offline fixture tests and **have not been exercised against a live environment**.
+
+API references: [management components](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/vcf-management-components/get/), [services](https://developer.broadcom.com/xapis/vmware-cloud-foundation-api/latest/v1/vcf-services/get/), [depot sync](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/system/settings/depot/depot-sync-info/get/), [Operations alerts](https://developer.broadcom.com/xapis/vcf-operations-api/latest/suite-api/api/alerts/get/), [adapters](https://developer.broadcom.com/xapis/vcf-operations-api/latest/suite-api/api/adapters/get/), [resources](https://developer.broadcom.com/xapis/vcf-operations-api/latest/suite-api/api/resources/get/), [Automation deployments](https://developer.broadcom.com/xapis/vm-apps-org-catalog/latest/deployment/api/deployments/get/), [catalog items](https://developer.broadcom.com/xapis/vm-apps-org-deployment/latest/catalog/api/items/get/), [NSX Tier-0](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier0s.html), [Tier-1](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier1.html), and [security policies](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListSecurityPoliciesForDomain.html).
+
 ## Run the reports
 
 Use Python 3.11 or later for the SDDC Manager report. Provide the SDDC Manager name, a user with read access, and an output directory. The script prompts for the password and keeps the access token in memory. The token endpoint also issues a refresh token, which the script does not save or use. Review your SDDC Manager token expiration policy. TLS certificate verification is on by default. Supply `--ca-bundle` when the issuing CA is absent from the system trust store.
