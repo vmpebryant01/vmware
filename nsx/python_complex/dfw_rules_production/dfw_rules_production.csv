@@ -1,4 +1,4 @@
-# NSX-T DFW Rule CSV Example - For automation use in production. Do not edit live firewall rules by hand.,,,,,,,,,
+# Author: Paul Bryant. Illustrative rules only; review every row before use. Not validated for production.,,,,,,,,,
 Section,RuleName,Source,Destination,Service,Action,Direction,AppliedTo,Notes,Logging
 Prod-Web,Allow Web Frontends,SG-Prod-Frontend,SG-Prod-WebApp,"HTTP,HTTPS",ALLOW,IN_OUT,SG-Prod-WebApp,Allow web frontends to webapps,TRUE
 Prod-Web,Deny All Other Inbound,,SG-Prod-WebApp,,DROP,IN,SG-Prod-WebApp,Default deny for webapp ingress,TRUE
