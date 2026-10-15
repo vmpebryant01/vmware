@@ -7,7 +7,7 @@
     Logs all actions.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Use with caution (may impact disk usage).
 #>
 

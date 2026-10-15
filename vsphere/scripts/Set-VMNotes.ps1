@@ -7,7 +7,7 @@
     Logs changes.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
 #>
 
 $vcServer = Read-Host "Enter vCenter FQDN or IP"

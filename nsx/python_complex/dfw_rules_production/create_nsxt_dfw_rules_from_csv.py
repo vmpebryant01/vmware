@@ -1,3 +1,4 @@
+# Target: NSX 4.2.x Policy/Manager APIs; 4.2.2.1 reference. See docs/compatibility.md.
 """Preview or apply NSX distributed firewall rules from a CSV file.
 
 Author: Paul Bryant

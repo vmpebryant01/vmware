@@ -13,7 +13,7 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
     (Requires vCenter statistics and array plugin support.)
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: SRM 8.x / Live Site Recovery 9.0.2.x with VMware.PowerCLI 13.x. See docs/compatibility.md.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"
 $vcUser   = Read-Host "Enter vCenter username"

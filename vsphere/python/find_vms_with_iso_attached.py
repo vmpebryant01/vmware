@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """Export VMs with a CD-ROM device backed by an ISO file.
 
 Author: Paul Bryant

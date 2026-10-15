@@ -1,6 +1,6 @@
 requests
 python-dotenv
-pyvmomi
+pyvmomi>=8.0.3.0.0,<9
 pandas
 openpyxl
 schedule

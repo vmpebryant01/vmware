@@ -7,7 +7,7 @@
     Output to CSV, logs all steps.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Adjust $RequiredTagCategory/$RequiredTagValue as needed.
 #>
 

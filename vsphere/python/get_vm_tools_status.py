@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """Export VMware Tools version and running status for VMs.
 
 Author: Paul Bryant

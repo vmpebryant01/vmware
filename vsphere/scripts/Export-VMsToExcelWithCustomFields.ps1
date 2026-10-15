@@ -7,7 +7,7 @@
     Requires ImportExcel PowerShell module.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Install-Module -Name ImportExcel if not present.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"

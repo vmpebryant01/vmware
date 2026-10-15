@@ -7,7 +7,7 @@
     Increases disk size and logs results.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     VM must be powered off.
 #>
 

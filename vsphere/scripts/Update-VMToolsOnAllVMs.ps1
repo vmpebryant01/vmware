@@ -6,7 +6,7 @@
     Finds all powered-on VMs with outdated Tools, updates them, logs success/failure.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     VM reboot may be required.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"

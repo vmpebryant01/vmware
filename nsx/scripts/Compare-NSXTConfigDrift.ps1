@@ -12,7 +12,7 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
     Reads a baseline config (JSON/CSV), compares to live config, flags new/missing/changed objects.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Baseline file must be exported previously (see Export-NSXTConfigBackup.ps1).
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"

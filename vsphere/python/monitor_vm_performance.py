@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """Export a point-in-time VM CPU and guest memory usage sample.
 
 Author: Paul Bryant

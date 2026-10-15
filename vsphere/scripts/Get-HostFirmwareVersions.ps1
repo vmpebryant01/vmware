@@ -6,7 +6,7 @@
     Exports firmware/driver inventory for hardware compliance.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Some info may require vendor VIBs/tools.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"

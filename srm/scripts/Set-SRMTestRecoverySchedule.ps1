@@ -7,7 +7,7 @@
     Exports current schedule to CSV.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: SRM 8.x / Live Site Recovery 9.0.2.x with VMware.PowerCLI 13.x. See docs/compatibility.md.
     Requires admin rights on scheduler.
 #>
 

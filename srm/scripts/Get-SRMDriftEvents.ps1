@@ -11,7 +11,7 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
     Exports all events with type "ConfigDrift" or similar in the last 7 days.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: SRM 8.x / Live Site Recovery 9.0.2.x with VMware.PowerCLI 13.x. See docs/compatibility.md.
 #>
 $vcServer = Read-Host "vCenter FQDN/IP"
 $vcUser   = Read-Host "vCenter username"

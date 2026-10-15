@@ -8,7 +8,7 @@ throw 'NSX drift event retrieval is not implemented for this example.'
     Logs actions, exports events for review.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     REST/pyVmomi may be needed for deep event fetch.
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"

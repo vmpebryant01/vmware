@@ -3,10 +3,10 @@
     Check and remediate host config drift (NTP, syslog, advanced settings).
 
 .DESCRIPTION
-    Compares each host’s NTP/syslog/advanced config to baseline, logs/remediates drift.
+    Compares each host's NTP/syslog/advanced config to baseline, logs/remediates drift.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: vSphere 8.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
     Adjust $baselineNTP, $baselineSyslog, $advSettings as needed.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"

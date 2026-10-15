@@ -1,3 +1,4 @@
+# Target: vSphere 8.x API generation; vCenter 8.0 Update 3 reference. See docs/compatibility.md.
 """Preview or rename vSphere inventory VMs from a CSV file.
 
 CSV columns: old_name,new_name. The --apply flag performs changes.

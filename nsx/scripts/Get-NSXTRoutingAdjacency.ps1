@@ -12,7 +12,7 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
     Useful for rapid troubleshooting of dynamic routing peering status.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: NSX 4.2.x with VMware.PowerCLI 13.x (13.3 reference). See docs/compatibility.md.
 #>
 $nsxServer = Read-Host "NSX Manager FQDN/IP"
 $nsxUser   = Read-Host "NSX username"

@@ -12,7 +12,7 @@ if ($unavailableCommands.Count -gt 0) { throw "Required commands are unavailable
     Exports drift report.
 
 .NOTES
-    PowerCLI >=13.0 required.
+    Target: SRM 8.x / Live Site Recovery 9.0.2.x with VMware.PowerCLI 13.x. See docs/compatibility.md.
     Baseline file must be exported by Export-SRMConfig.ps1.
 #>
 $vcServer = Read-Host "Enter vCenter FQDN/IP"
