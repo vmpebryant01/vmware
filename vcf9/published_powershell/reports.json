@@ -1,0 +1,801 @@
+{
+  "author": "Paul Bryant",
+  "reports": {
+    "segments": {
+      "target": "NSX Manager",
+      "path": "/policy/api/v1/infra/segments",
+      "columns": [
+        "id",
+        "display_name",
+        "connectivity_path",
+        "transport_zone_path",
+        "admin_state",
+        "_last_modified_time"
+      ],
+      "fields": [
+        "id",
+        "display_name",
+        "connectivity_path",
+        "transport_zone_path",
+        "admin_state",
+        "_last_modified_time"
+      ],
+      "style": "cursor",
+      "key": "",
+      "required": [],
+      "script": "nsx/Get-Vcf91NsxSegmentsReport.ps1"
+    },
+    "groups": {
+      "target": "NSX Manager",
+      "path": "/policy/api/v1/infra/domains/{domain_id}/groups",
+      "columns": [
+        "domain_id",
+        "id",
+        "display_name",
+        "group_type",
+        "_last_modified_time"
+      ],
+      "fields": [
+        "$domain_id",
+        "id",
+        "display_name",
+        "group_type",
+        "_last_modified_time"
+      ],
+      "style": "cursor",
+      "key": "",
+      "required": [
+        "domain-id"
+      ],
+      "script": "nsx/Get-Vcf91NsxGroupsReport.ps1"
+    },
+    "segment_ports": {
+      "target": "NSX Manager",
+      "path": "/policy/api/v1/infra/segments/{segment_id}/ports",
+      "columns": [
+        "segment_id",
+        "id",
+        "display_name",
+        "admin_state",
+        "_last_modified_time"
+      ],
+      "fields": [
+        "$segment_id",
+        "id",
+        "display_name",
+        "admin_state",
+        "_last_modified_time"
+      ],
+      "style": "cursor",
+      "key": "",
+      "required": [
+        "segment-id"
+      ],
+      "script": "nsx/Get-Vcf91NsxSegmentPortsReport.ps1"
+    },
+    "transport_zones": {
+      "target": "NSX Manager",
+      "path": "/policy/api/v1/infra/sites/{site_id}/enforcement-points/{enforcement_point_id}/transport-zones",
+      "columns": [
+        "site_id",
+        "enforcement_point_id",
+        "id",
+        "display_name",
+        "tz_type",
+        "is_default"
+      ],
+      "fields": [
+        "$site_id",
+        "$enforcement_point_id",
+        "id",
+        "display_name",
+        "tz_type",
+        "is_default"
+      ],
+      "style": "cursor",
+      "key": "",
+      "required": [
+        "site-id",
+        "enforcement-point-id"
+      ],
+      "script": "nsx/Get-Vcf91NsxTransportZonesReport.ps1"
+    },
+    "security_rules": {
+      "target": "NSX Manager",
+      "path": "/policy/api/v1/infra/domains/{domain_id}/security-policies/{policy_id}/rules",
+      "columns": [
+        "domain_id",
+        "policy_id",
+        "id",
+        "display_name",
+        "action",
+        "direction",
+        "disabled",
+        "logged",
+        "sequence_number"
+      ],
+      "fields": [
+        "$domain_id",
+        "$policy_id",
+        "id",
+        "display_name",
+        "action",
+        "direction",
+        "disabled",
+        "logged",
+        "sequence_number"
+      ],
+      "style": "cursor",
+      "key": "",
+      "required": [
+        "domain-id",
+        "policy-id"
+      ],
+      "script": "nsx/Get-Vcf91NsxSecurityRulesReport.ps1"
+    },
+    "alert_definitions": {
+      "target": "VCF Operations",
+      "path": "/suite-api/api/alertdefinitions",
+      "columns": [
+        "id",
+        "name",
+        "adapterKindKey",
+        "resourceKindKey",
+        "waitCycles",
+        "cancelCycles"
+      ],
+      "fields": [
+        "id",
+        "name",
+        "adapterKindKey",
+        "resourceKindKey",
+        "waitCycles",
+        "cancelCycles"
+      ],
+      "style": "ops_page",
+      "key": "alertDefinitions",
+      "required": [],
+      "script": "operations/Get-Vcf91OperationsAlertDefinitionsReport.ps1"
+    },
+    "collectors": {
+      "target": "VCF Operations",
+      "path": "/suite-api/api/collectors",
+      "columns": [
+        "id",
+        "name",
+        "state",
+        "local",
+        "dataPersistenceEnabled"
+      ],
+      "fields": [
+        "id",
+        "name",
+        "state",
+        "local",
+        "dataPersistenceEnabled"
+      ],
+      "style": "list",
+      "key": "collector",
+      "required": [],
+      "script": "operations/Get-Vcf91OperationsCollectorsReport.ps1"
+    },
+    "collector_groups": {
+      "target": "VCF Operations",
+      "path": "/suite-api/api/collectorgroups",
+      "columns": [
+        "id",
+        "name",
+        "systemDefined",
+        "haEnabled",
+        "lbEnabled",
+        "collectorCount"
+      ],
+      "fields": [
+        "id",
+        "name",
+        "systemDefined",
+        "haEnabled",
+        "lbEnabled",
+        "#collectorId"
+      ],
+      "style": "list",
+      "key": "collectorGroups",
+      "required": [],
+      "script": "operations/Get-Vcf91OperationsCollectorGroupsReport.ps1"
+    },
+    "adapters": {
+      "target": "VCF Operations",
+      "path": "/suite-api/api/adapters",
+      "columns": [
+        "id",
+        "name",
+        "adapterKindKey",
+        "collectorId",
+        "collectorGroupId",
+        "lastCollected",
+        "lastHeartbeat",
+        "numberOfResourcesCollected"
+      ],
+      "fields": [
+        "id",
+        "resourceKey.name",
+        "resourceKey.adapterKindKey",
+        "collectorId",
+        "collectorGroupId",
+        "lastCollected",
+        "lastHeartbeat",
+        "numberOfResourcesCollected"
+      ],
+      "style": "list",
+      "key": "adapterInstancesInfoDto",
+      "required": [],
+      "script": "operations/Get-Vcf91OperationsAdaptersReport.ps1"
+    },
+    "resources": {
+      "target": "VCF Operations",
+      "path": "/suite-api/api/resources?resourceKind={resource_kind}",
+      "columns": [
+        "identifier",
+        "name",
+        "adapterKindKey",
+        "resourceKindKey",
+        "creationTime"
+      ],
+      "fields": [
+        "identifier",
+        "resourceKey.name",
+        "resourceKey.adapterKindKey",
+        "resourceKey.resourceKindKey",
+        "creationTime"
+      ],
+      "style": "ops_page",
+      "key": "resourceList",
+      "required": [
+        "resource-kind"
+      ],
+      "script": "operations/Get-Vcf91OperationsResourcesReport.ps1"
+    },
+    "vcenters": {
+      "target": "SDDC Manager",
+      "path": "/v1/vcenters",
+      "columns": [
+        "id",
+        "fqdn",
+        "domain",
+        "version",
+        "status",
+        "vcInstanceId"
+      ],
+      "fields": [
+        "id",
+        "fqdn",
+        "domain.name",
+        "version",
+        "status",
+        "vcInstanceId"
+      ],
+      "style": "sddc_page",
+      "key": "",
+      "required": [],
+      "script": "sddc/Get-Vcf91SddcVcentersReport.ps1"
+    },
+    "nsx_clusters": {
+      "target": "SDDC Manager",
+      "path": "/v1/nsxt-clusters",
+      "columns": [
+        "id",
+        "vipFqdn",
+        "version",
+        "status",
+        "isShared",
+        "isShareable",
+        "nodeCount"
+      ],
+      "fields": [
+        "id",
+        "vipFqdn",
+        "version",
+        "status",
+        "isShared",
+        "isShareable",
+        "#nodes"
+      ],
+      "style": "sddc_page",
+      "key": "",
+      "required": [],
+      "script": "sddc/Get-Vcf91SddcNsxClustersReport.ps1"
+    },
+    "releases": {
+      "target": "SDDC Manager",
+      "path": "/v1/releases",
+      "columns": [
+        "product",
+        "version",
+        "releaseDate",
+        "minCompatibleVcfVersion",
+        "isApplicable",
+        "notApplicableReason"
+      ],
+      "fields": [
+        "product",
+        "version",
+        "releaseDate",
+        "minCompatibleVcfVersion",
+        "isApplicable",
+        "notApplicableReason"
+      ],
+      "style": "sddc_single",
+      "key": "",
+      "required": [],
+      "script": "sddc/Get-Vcf91SddcReleasesReport.ps1"
+    },
+    "bundles": {
+      "target": "SDDC Manager",
+      "path": "/v1/bundles",
+      "columns": [
+        "id",
+        "type",
+        "version",
+        "severity",
+        "vendor",
+        "description"
+      ],
+      "fields": [
+        "id",
+        "type",
+        "version",
+        "severity",
+        "vendor",
+        "description"
+      ],
+      "style": "sddc_single",
+      "key": "",
+      "required": [],
+      "script": "sddc/Get-Vcf91SddcBundlesReport.ps1"
+    },
+    "notifications": {
+      "target": "SDDC Manager",
+      "path": "/v1/notifications",
+      "columns": [
+        "type",
+        "severity",
+        "message",
+        "creationTimestamp",
+        "expirationTimestamp"
+      ],
+      "fields": [
+        "type",
+        "severity",
+        "message.localizedMessage",
+        "creationTimestamp",
+        "expirationTimestamp"
+      ],
+      "style": "sddc_list",
+      "key": "",
+      "required": [],
+      "script": "sddc/Get-Vcf91SddcNotificationsReport.ps1"
+    },
+    "pairings": {
+      "path": "/pairings",
+      "columns": [
+        "pairing_id",
+        "local_vcenter",
+        "local_status",
+        "remote_vcenter",
+        "remote_status"
+      ],
+      "fields": [
+        "pairing_id",
+        "local_vc_server.name",
+        "local_vc_server.server_status",
+        "remote_vc_server.name",
+        "remote_vc_server.server_status"
+      ],
+      "required": [],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryPairingsReport.ps1"
+    },
+    "pairing_issues": {
+      "path": "/pairings/{pairing_id}/issues",
+      "columns": [
+        "pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "fields": [
+        "$pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "required": [
+        "pairing-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryPairingIssuesReport.ps1"
+    },
+    "srms": {
+      "path": "/pairings/{pairing_id}/srms",
+      "columns": [
+        "pairing_id",
+        "id",
+        "name",
+        "url",
+        "server_status",
+        "version",
+        "build_number"
+      ],
+      "fields": [
+        "$pairing_id",
+        "id",
+        "name",
+        "url",
+        "server_status",
+        "version",
+        "build_number"
+      ],
+      "required": [
+        "pairing-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoverySrmsReport.ps1"
+    },
+    "srm_issues": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/issues",
+      "columns": [
+        "srm_id",
+        "pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "fields": [
+        "$srm_id",
+        "$pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoverySrmIssuesReport.ps1"
+    },
+    "protection_groups": {
+      "path": "/pairings/{pairing_id}/protection-management/groups",
+      "columns": [
+        "pairing_id",
+        "id",
+        "name",
+        "protected_site_name",
+        "recovery_site_name",
+        "total_vms",
+        "replication_type",
+        "recovery_status",
+        "status"
+      ],
+      "fields": [
+        "$pairing_id",
+        "id",
+        "name",
+        "protected_site_name",
+        "recovery_site_name",
+        "total_vms",
+        "replication_type",
+        "recovery_status",
+        "status"
+      ],
+      "required": [
+        "pairing-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryProtectionGroupsReport.ps1"
+    },
+    "group_issues": {
+      "path": "/pairings/{pairing_id}/protection-management/groups/{group_id}/issues",
+      "columns": [
+        "group_id",
+        "pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "fields": [
+        "$group_id",
+        "$pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "required": [
+        "pairing-id",
+        "group-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryGroupIssuesReport.ps1"
+    },
+    "group_vms": {
+      "path": "/pairings/{pairing_id}/protection-management/groups/{group_id}/vms",
+      "columns": [
+        "pairing_id",
+        "group_id",
+        "id",
+        "name",
+        "template",
+        "inside_vapp"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$group_id",
+        "id",
+        "name",
+        "template",
+        "inside_vapp"
+      ],
+      "required": [
+        "pairing-id",
+        "group-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryGroupVmsReport.ps1"
+    },
+    "recovery_plans": {
+      "path": "/pairings/{pairing_id}/recovery-management/plans",
+      "columns": [
+        "pairing_id",
+        "id",
+        "name",
+        "status",
+        "protected_site_name",
+        "recovery_site_name",
+        "progress",
+        "is_running"
+      ],
+      "fields": [
+        "$pairing_id",
+        "id",
+        "name",
+        "status",
+        "protected_site_name",
+        "recovery_site_name",
+        "progress",
+        "is_running"
+      ],
+      "required": [
+        "pairing-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryRecoveryPlansReport.ps1"
+    },
+    "plan_issues": {
+      "path": "/pairings/{pairing_id}/recovery-management/plans/{plan_id}/issues",
+      "columns": [
+        "plan_id",
+        "pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "fields": [
+        "$plan_id",
+        "$pairing_id",
+        "entity",
+        "entity_name",
+        "issue_type",
+        "status",
+        "timestamp",
+        "description"
+      ],
+      "required": [
+        "pairing-id",
+        "plan-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryPlanIssuesReport.ps1"
+    },
+    "plan_protection_groups": {
+      "path": "/pairings/{pairing_id}/recovery-management/plans/{plan_id}/protection-groups",
+      "columns": [
+        "pairing_id",
+        "plan_id",
+        "group_id",
+        "group_name",
+        "total_vms",
+        "status"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$plan_id",
+        "id",
+        "name",
+        "total_vms",
+        "status"
+      ],
+      "required": [
+        "pairing-id",
+        "plan-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryPlanProtectionGroupsReport.ps1"
+    },
+    "folder_mappings": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/inventory-mappings/folders",
+      "columns": [
+        "pairing_id",
+        "srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryFolderMappingsReport.ps1"
+    },
+    "network_mappings": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/inventory-mappings/networks",
+      "columns": [
+        "pairing_id",
+        "srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryNetworkMappingsReport.ps1"
+    },
+    "resource_mappings": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/inventory-mappings/resources",
+      "columns": [
+        "pairing_id",
+        "srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryResourceMappingsReport.ps1"
+    },
+    "storage_policy_mappings": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/inventory-mappings/storage-policies",
+      "columns": [
+        "pairing_id",
+        "srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$srm_id",
+        "id",
+        "primary_object_name",
+        "secondary_object_name",
+        "reverse_mapping_type"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryStoragePolicyMappingsReport.ps1"
+    },
+    "test_network_mappings": {
+      "path": "/pairings/{pairing_id}/srms/{srm_id}/inventory-mappings/test-networks",
+      "columns": [
+        "pairing_id",
+        "srm_id",
+        "id",
+        "target_network",
+        "test_network",
+        "test_network_name"
+      ],
+      "fields": [
+        "$pairing_id",
+        "$srm_id",
+        "id",
+        "target_network",
+        "test_network",
+        "test_network_name"
+      ],
+      "required": [
+        "pairing-id",
+        "srm-id"
+      ],
+      "target": "VCF Protection and Recovery",
+      "style": "dr_page",
+      "key": "list",
+      "script": "recovery/Get-Vcf91RecoveryTestNetworkMappingsReport.ps1"
+    }
+  }
+}

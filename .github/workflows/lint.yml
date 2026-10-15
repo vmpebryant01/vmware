@@ -33,3 +33,6 @@ jobs:
             }
           }
           if ($failed) { exit 1 }
+      - name: Check published PowerShell reports
+        shell: pwsh
+        run: ./tests/Test-PublishedPowerShell.ps1

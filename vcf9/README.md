@@ -4,6 +4,8 @@ By Paul Bryant
 
 The [additional VCF 9.1.1 reports](ADDITIONAL_REPORTS.md) add 5 NSX, 5 Operations, 5 SDDC Manager, and 15 Protection and Recovery commands.
 
+The [30 published-pattern PowerShell reports](published_powershell/README.md) cover the same four areas with PowerShell entry points and a [source-by-source evidence map](published_powershell/PUBLISHED_SOURCES.md). They use the documented REST APIs without requiring the PowerCLI module. Their VCF 9.1.1 behavior has not been tested in a live site.
+
 These examples collect a small operational baseline without changing infrastructure. They target the VCF 9.1.x product line and VCF PowerCLI 9.1.x. The original repository examples remain scoped to their earlier product generations.
 
 | Report | Data collected | Tool |

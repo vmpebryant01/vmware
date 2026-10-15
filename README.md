@@ -4,7 +4,7 @@ This repository contains vSphere, NSX, and Site Recovery Manager (SRM) scripts. 
 
 The historical examples in `vsphere`, `nsx`, and `srm` target the vSphere 8.x, NSX 4.2.x, and VMware.PowerCLI 13.x generation. The original commits were posted July 23, 2025. See [historical version scope](docs/compatibility.md) for the release-date evidence, the separate Live Site Recovery version line, and compatibility limits. Their behavior on VCF 9.x has not been validated.
 
-New read-only examples for the VCF 9.1.x generation are in the separate [VCF 9.1.x reports](vcf9/README.md) collection. Their API paths and PowerCLI commands are documented there; live behavior remains unverified.
+New read-only examples for the VCF 9.1.x generation are in the separate [VCF 9.1.x reports](vcf9/README.md) collection, including [30 PowerShell reports with published source references](vcf9/published_powershell/README.md). Their API paths and PowerCLI commands are documented there; live behavior remains unverified.
 
 ## Start here
 
