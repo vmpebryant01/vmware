@@ -1,0 +1,37 @@
+# VCF 9.1.x read-only reports
+
+By Paul Bryant
+
+These examples collect a small operational baseline without changing infrastructure. They target the VCF 9.1.x product line and VCF PowerCLI 9.1.x. The original repository examples remain scoped to their earlier product generations.
+
+| Report | Data collected | Tool |
+| --- | --- | --- |
+| [SDDC Manager inventory](sddc_inventory.py) | Appliance version, workload domains, clusters, hosts | Python standard library |
+| [vSphere inventory](Get-Vcf91VsphereInventory.ps1) | vCenter version, hosts, clusters, datastores, VMs | VCF PowerCLI |
+| [Aged snapshots](Get-Vcf91SnapshotReport.ps1) | VM, snapshot name, creation time, age, size | VCF PowerCLI |
+
+## Run the reports
+
+Use Python 3.11 or later for the SDDC Manager report. Provide the SDDC Manager name, a user with read access, and an output directory. The script prompts for the password and keeps the access token in memory. The token endpoint also issues a refresh token, which the script does not save or use. Review your SDDC Manager token expiration policy. TLS certificate verification is on by default. Supply `--ca-bundle` when the issuing CA is absent from the system trust store.
+
+```powershell
+python vcf9/sddc_inventory.py --host sddc.example.com --username report-user --output-dir reports/sddc --ca-bundle C:\certs\root-ca.pem
+```
+
+For the PowerCLI reports, use PowerShell 7.4 or later and install VCF.PowerCLI 9.1.x from the [Broadcom installation guide](https://developer.broadcom.com/powercli/installation-guide). The scripts check for the 9.1.x bundle and prompt for a credential. Leave certificate validation enabled and trust the issuing CA before connecting.
+
+```powershell
+Install-Module -Name VCF.PowerCLI -RequiredVersion 9.1.1.25718932 -Scope CurrentUser
+./vcf9/Get-Vcf91VsphereInventory.ps1 -VCenter vc.example.com -OutputDirectory reports/vsphere
+./vcf9/Get-Vcf91SnapshotReport.ps1 -VCenter vc.example.com -OutputDirectory reports/snapshots -OlderThanDays 14
+```
+
+Use a dedicated output directory for each run. Running the same report again in the same directory replaces its CSV files. The CSV files contain infrastructure names, versions, and capacity information, so store them with appropriate access controls. The snapshot report lists candidates for review and never removes snapshots. Snapshot size requires the vCenter `Datastore/Browse datastore` privilege; without it, PowerCLI may leave the size blank.
+
+## Compatibility and validation
+
+The SDDC Manager script checks that the appliance reports version 9.1.x and then uses the documented `/v1` token, appliance, domain, cluster, and host endpoints. The `/v1` segment is an API resource version, not a VCF product version. The PowerCLI scripts check the installed VCF.PowerCLI bundle; they record the connected vCenter version because a VCF environment can contain components at different versions during lifecycle operations.
+
+Offline tests cover Python request methods, pagination, version rejection, TLS verification, and CSV output. PowerShell files are syntax checked. These reports have **not been run against a live VCF 9.1.x environment**. Confirm permissions, returned fields, performance, and site policies in a nonproduction environment before operational use.
+
+Broadcom references: [VCF release history](https://knowledge.broadcom.com/external/article?legacyId=52520), [VCF PowerCLI 9.1.1 package](https://www.powershellgallery.com/packages/VCF.PowerCLI/9.1.1.25718932), [SDDC Manager token creation](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/tokens/post/), [appliance information](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/system/appliance-info/get/), [domains](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/domains/get/), [clusters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/clusters/get/), [hosts](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/hosts/get/), [PowerCLI command reference](https://developer.broadcom.com/powercli/latest/).

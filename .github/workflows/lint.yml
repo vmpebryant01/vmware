@@ -11,7 +11,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile Python files
-        run: python -m compileall -q nsx srm vsphere
+        run: python -m compileall -q nsx srm vsphere vcf9
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
@@ -23,7 +23,7 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          Get-ChildItem -Path nsx,srm,vsphere -Filter *.ps1 -Recurse | ForEach-Object {
+          Get-ChildItem -Path nsx,srm,vsphere,vcf9 -Filter *.ps1 -Recurse | ForEach-Object {
             $tokens = $null
             $errors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
