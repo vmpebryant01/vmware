@@ -8,7 +8,7 @@ The historical examples in `vsphere`, `nsx`, and `srm` target the vSphere 8.x, N
 
 New read-only examples for the VCF 9.1.x generation are in the separate [VCF 9.1.x reports](vcf9/README.md) collection. Their API paths and PowerCLI commands are documented there; live behavior remains unverified.
 
-The [API inventory collectors](vcf9/api_collectors/README.md) provide separate Python commands for VCF management, HCX, NSX, VCF Operations, VCF Automation, and Protection and Recovery. They export JSON and optional CSV using Python's standard library. The collection guide links the documented API contracts and product-specific limits. Offline tests cover collection behavior; live compatibility remains unverified for the installed product builds.
+The [API inventory collectors](vcf9/api_collectors/README.md) provide separate Python commands for VCF Fleet Management, SDDC Manager, vCenter, HCX, NSX, VCF Operations, VCF Automation, and Protection and Recovery. They export JSON and optional CSV using Python's standard library, with API preflight, large vCenter inventory partitioning, run comparisons, relationships, metrics, and optional operational reports. The collection guide links the documented API contracts and product-specific limits. Offline tests cover collection behavior; live compatibility remains unverified for the installed product builds.
 
 ## Start here
 

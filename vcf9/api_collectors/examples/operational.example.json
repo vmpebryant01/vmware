@@ -1,0 +1,31 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {
+      "name": "sddc-health", "component": "sddc_manager", "url": "https://sddc-manager.example.com",
+      "username_env": "SDDC_USERNAME", "password_env": "SDDC_PASSWORD",
+      "resources": ["certificates", "failed_tasks"], "task_days": 30, "certificate_attention_days": 60
+    },
+    {
+      "name": "nsx-rules", "component": "nsx", "url": "https://nsx-manager.example.com",
+      "username_env": "NSX_USERNAME", "password_env": "NSX_PASSWORD",
+      "resources": ["security_rules"], "domain_id": "default", "policy_ids": ["replace-policy-id"]
+    },
+    {
+      "name": "ops-metrics", "component": "vcf_operations", "url": "https://operations.example.com",
+      "token_env": "VCF_OPERATIONS_TOKEN", "token_scheme": "OpsToken",
+      "resources": ["latest_metrics", "relationships", "collectors"],
+      "resource_ids": ["replace-resource-uuid"], "stat_keys": ["cpu|usage_average"]
+    },
+    {
+      "name": "catalog", "component": "vcf_automation", "url": "https://automation.example.com",
+      "token_env": "VCFA_ALL_APPS_ACCESS_TOKEN", "api_family": "all_apps", "resources": ["catalog_items"]
+    },
+    {
+      "name": "recovery-mappings", "component": "live_site_recovery", "url": "https://site-recovery.example.com",
+      "auth_source": "session_token", "token_env": "RECOVERY_SESSION",
+      "pairing_id": "replace-pairing-id", "srm_ids": ["replace-srm-id"],
+      "resources": ["folder_mappings", "network_mappings", "resource_mappings", "storage_policy_mappings", "test_network_mappings"]
+    }
+  ]
+}

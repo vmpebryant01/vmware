@@ -5,6 +5,8 @@ import json
 
 from .http_client import ApiError
 from .products import module_for, modules
+from . import operational
+from .vcenter_inventory import VCENTER_LIMITS, collect_vcenter
 
 RESOURCE_PATHS = {
     "sddc_manager": {
@@ -39,8 +41,8 @@ DEFAULT_RESOURCES["nsx"] = [resource for resource in RESOURCE_PATHS["nsx"]
 for product in modules():
     RESOURCE_PATHS.update(product.RESOURCE_PATHS)
     DEFAULT_RESOURCES.update(product.DEFAULT_RESOURCES)
-VCENTER_LIMITS = {"datacenters": 1000, "clusters": 1000, "hosts": 2500,
-                  "datastores": 2500, "networks": 1000, "vms": 4000}
+for component, paths in operational.RESOURCE_PATHS.items():
+    RESOURCE_PATHS[component].update(paths)
 
 
 def _records(value, key=None):
@@ -61,6 +63,8 @@ def _nonnegative_integer(value, label):
 def collect_resource(client, resource, page_size=100, max_pages=1000):
     """Return all records in the configured scope, or raise without claiming completeness."""
     component = client.target["component"]
+    if operational.supports(component, resource):
+        return operational.collect_resource(client, resource, page_size=page_size, max_pages=max_pages)
     product = module_for(component)
     if product is not None:
         return product.collect_resource(client, resource, page_size=page_size, max_pages=max_pages)
@@ -77,12 +81,7 @@ def collect_resource(client, resource, page_size=100, max_pages=1000):
             raise ApiError("SDDC Manager returned invalid appliance information.")
         return [appliance]
     if component == "vcenter":
-        filters = client.target.get("filters", {}).get(resource, {})
-        records = _records(client.get(path, params=filters))
-        limit = VCENTER_LIMITS[resource]
-        if len(records) >= limit:
-            raise ApiError(f"{resource} query reached the {limit:,}-result boundary; configure a narrower {resource} filter and collect each scope separately.")
-        return records
+        return collect_vcenter(client, resource, max_pages=max_pages)
     combined = []
     seen = set()
     cursor = None

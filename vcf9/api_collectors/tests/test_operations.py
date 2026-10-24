@@ -170,5 +170,101 @@ class ConfigurationTests(unittest.TestCase):
                 operations.validate_target(client(**options).target)
 
 
+class ScopedMetricsAndRelationshipsTests(unittest.TestCase):
+    def resource(self, identifier="resource-1"):
+        return {"identifier": identifier, "resourceKey": {"name": "VM1", "adapterKindKey": "VMWARE", "resourceKindKey": "VirtualMachine"}}
+
+    def test_scoped_resources_and_metric_keys_are_required(self):
+        for target in (
+            {"resources": ["latest_metrics"]},
+            {"resources": ["latest_metrics"], "resource_ids": ["resource-1"]},
+            {"resources": ["relationships"]},
+            {"resources": ["relationships"], "resource_ids": ["../escape"]},
+        ):
+            with self.subTest(target=target), self.assertRaises(ValueError):
+                operations.validate_target(target)
+        self.assertNotIn("latest_metrics", operations.DEFAULT_RESOURCES["vcf_operations"])
+        self.assertNotIn("relationships", operations.DEFAULT_RESOURCES["vcf_operations"])
+
+    def test_latest_metrics_preserves_samples_and_exact_metadata_units(self):
+        current = client([
+            self.resource(),
+            {"resourceTypeAttributes": [{"key": "cpu|usage_average", "unit": "percent"}]},
+            {"values": [{"resourceId": "resource-1", "stat-list": {"stat": [
+                {"statKey": {"key": "cpu|usage_average"}, "timestamps": [1753340126993], "data": [12.5],
+                 "intervalUnit": {"quantifier": 5, "intervalType": "MINUTES"}, "rollUpType": "AVG"}
+            ]}}]},
+        ], resource_ids=["resource-1"], stat_keys=["cpu|usage_average"])
+        rows = operations.collect_resource(current, "latest_metrics")
+        self.assertEqual(rows[0]["timestamps"], [1753340126993])
+        self.assertEqual(rows[0]["data"], [12.5])
+        self.assertEqual(rows[0]["unit"], "percent")
+        self.assertEqual(rows[0]["stat_key"], "cpu|usage_average")
+        self.assertEqual(current.get.call_args.kwargs["params"], {
+            "resourceId": ["resource-1"], "statKey": ["cpu|usage_average"], "maxSamples": 1})
+
+    def test_unavailable_samples_and_units_are_not_fabricated(self):
+        current = client([self.resource(), {"resourceTypeAttributes": []}, {"values": []}],
+                         resource_ids=["resource-1"], stat_keys=["cpu|usage_average"])
+        row = operations.collect_resource(current, "latest_metrics")[0]
+        self.assertIsNone(row["unit"])
+        self.assertEqual(row["timestamps"], [])
+        self.assertEqual(row["data"], [])
+        self.assertEqual(row["availability"], "no_samples_returned")
+
+    def test_documented_optional_empty_metric_collections_remain_explicitly_unavailable(self):
+        for response in ({}, {"values": [{"resourceId": "resource-1"}]},
+                         {"values": [{"resourceId": "resource-1", "stat-list": {}}]}):
+            current = client([self.resource(), {}, response],
+                             resource_ids=["resource-1"], stat_keys=["cpu|usage_average"])
+            with self.subTest(response=response):
+                row = operations.collect_resource(current, "latest_metrics")[0]
+                self.assertIsNone(row["unit"])
+                self.assertEqual(row["availability"], "no_samples_returned")
+
+    def test_metric_units_are_cached_by_adapter_and_resource_kind(self):
+        current = client([
+            self.resource(), {"resourceTypeAttributes": [{"key": "cpu|usage_average", "unit": "percent"}]}, {"values": []},
+            self.resource("resource-2"), {"values": []},
+        ], resource_ids=["resource-1", "resource-2"], stat_keys=["cpu|usage_average"])
+        rows = operations.collect_resource(current, "latest_metrics")
+        self.assertEqual([row["unit"] for row in rows], ["percent", "percent"])
+        paths = [call.args[0] for call in current.get.call_args_list]
+        self.assertEqual(sum("/adapterkinds/" in path for path in paths), 1)
+
+    def test_mismatched_timestamps_or_out_of_scope_metrics_fail(self):
+        for response in (
+            {"values": [{"resourceId": "resource-1", "stat-list": {"stat": [
+                {"statKey": {"key": "cpu|usage_average"}, "timestamps": [1000], "data": []}]}}]},
+            {"values": [{"resourceId": "different-resource", "stat-list": {"stat": []}}]},
+        ):
+            current = client([self.resource(), {"resourceTypeAttributes": []}, response],
+                             resource_ids=["resource-1"], stat_keys=["cpu|usage_average"])
+            with self.subTest(response=response), self.assertRaises(ApiError):
+                operations.collect_resource(current, "latest_metrics")
+
+    def test_parent_and_child_relationship_direction_and_pagination(self):
+        current = client([
+            {"relationshipType": "PARENT", "resourceList": [{"identifier": "parent-1"}],
+             "pageInfo": {"page": 0, "totalCount": 2}},
+            {"relationshipType": "PARENT", "resourceList": [{"identifier": "parent-2"}],
+             "pageInfo": {"page": 1, "totalCount": 2}},
+            {"relationshipType": "CHILD", "resourceList": [{"identifier": "child-1"}],
+             "pageInfo": {"page": 0, "totalCount": 1}},
+        ], resource_ids=["resource-1"])
+        rows = operations.collect_resource(current, "relationships")
+        self.assertEqual([row["relationship_type"] for row in rows], ["PARENT", "PARENT", "CHILD"])
+        self.assertEqual([row["related_resource_id"] for row in rows], ["parent-1", "parent-2", "child-1"])
+        self.assertEqual([call.kwargs["params"]["page"] for call in current.get.call_args_list], [0, 1, 0])
+
+    def test_incomplete_relationships_fail_without_exporting_subset(self):
+        current = client([
+            {"resourceList": [{"identifier": "parent-1"}], "pageInfo": {"page": 0, "totalCount": 2}},
+            {"resourceList": [], "pageInfo": {"page": 1, "totalCount": 2}},
+        ], resource_ids=["resource-1"])
+        with self.assertRaises(ApiError):
+            operations.collect_resource(current, "relationships")
+
+
 if __name__ == "__main__":
     unittest.main()

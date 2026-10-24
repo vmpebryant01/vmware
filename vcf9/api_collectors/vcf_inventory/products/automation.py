@@ -42,9 +42,12 @@ def validate_target(target):
     if not isinstance(variable, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", variable):
         raise ValueError("VCF Automation requires token_env naming a bearer access token environment variable.")
     resources = target.get("resources")
+    allowed_resources = set(FAMILY_RESOURCES[family])
+    if family in ("all_apps", "vm_apps"):
+        allowed_resources.add("catalog_items")
     if resources is not None and (
         not isinstance(resources, list) or not resources
-        or any(not isinstance(resource, str) or resource not in FAMILY_RESOURCES[family] for resource in resources)
+        or any(not isinstance(resource, str) or resource not in allowed_resources for resource in resources)
         or len(set(resources)) != len(resources)
     ):
         raise ValueError("VCF Automation resources must belong to the selected api_family.")

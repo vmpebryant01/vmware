@@ -15,9 +15,10 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Requ
 class ApiError(RuntimeError):
     """A sanitized API failure that does not include response bodies or secrets."""
 
-    def __init__(self, message, status=None):
+    def __init__(self, message, status=None, category=None):
         super().__init__(message)
         self.status = status
+        self.category = category
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -33,13 +34,14 @@ class HttpClient:
         self.headers = {"Accept": "application/json"}
         self._owns_session = False
         self._product_state = {}
+        self.collection_metadata = {}
         verify = target.get("verify_tls", True)
         if verify is not True and not isinstance(verify, str):
             raise ApiError("TLS verification must be enabled.")
         try:
             context = ssl.create_default_context(cafile=verify if isinstance(verify, str) else None)
         except (OSError, ssl.SSLError) as exc:
-            raise ApiError("Cannot load the trusted CA bundle.") from exc
+            raise ApiError("Cannot load the trusted CA bundle.", category="tls") from exc
         # Explicit target credentials, no ambient proxy or netrc credentials.
         self.opener = build_opener(ProxyHandler({}), HTTPSHandler(context=context), NoRedirect())
 
@@ -112,17 +114,17 @@ class HttpClient:
                     message = hints.get(status, "API request failed.")
                     if 300 <= status < 400:
                         message = "Redirect refused; configure the direct component HTTPS endpoint."
-                    raise ApiError(f"HTTP {status}. {message}", status=status) from None
+                    raise ApiError(f"HTTP {status}. {message}", status=status, category="http") from None
             except ssl.SSLError:
-                raise ApiError("TLS verification or negotiation failed; check the trusted CA bundle.") from None
+                raise ApiError("TLS verification or negotiation failed; check the trusted CA bundle.", category="tls") from None
             except URLError as exc:
                 if isinstance(exc.reason, ssl.SSLError):
-                    raise ApiError("TLS verification or negotiation failed; check the trusted CA bundle.") from None
+                    raise ApiError("TLS verification or negotiation failed; check the trusted CA bundle.", category="tls") from None
                 if attempt + 1 == attempts:
-                    raise ApiError("Connection failed; check DNS, network access, and the endpoint.") from None
+                    raise ApiError("Connection failed; check DNS, network access, and the endpoint.", category="network") from None
             except (TimeoutError, socket.timeout, ConnectionError, HTTPException):
                 if attempt + 1 == attempts:
-                    raise ApiError("The connection timed out or was interrupted.") from None
+                    raise ApiError("The connection timed out or was interrupted.", category="network") from None
             time.sleep(retry_delay)
         raise ApiError("API request failed after retries.")
 

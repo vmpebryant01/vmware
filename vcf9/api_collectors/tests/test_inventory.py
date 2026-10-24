@@ -249,9 +249,11 @@ class CollectorTests(unittest.TestCase):
             collect_resource(client, "hosts")
 
     def test_vcenter_vm_limit_is_an_explicit_error(self):
-        client = self.client("vcenter", [[{"vm": "vm-%s" % i} for i in range(4000)]])
+        client = self.client("vcenter", [[{"vm": "vm-%s" % i} for i in range(4000)], []])
         with self.assertRaises(ApiError):
             collect_resource(client, "vms")
+        self.assertEqual(client.get.call_count, 2)
+        self.assertEqual(client.collection_metadata["vms"]["coverage"], "incomplete")
 
     def test_collection_error_propagates(self):
         client = self.client("nsx", [])

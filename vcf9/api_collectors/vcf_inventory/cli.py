@@ -17,6 +17,11 @@ def utc_now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def collection_details(client, resource):
+    metadata = getattr(client, "collection_metadata", {})
+    return metadata.get(resource) if isinstance(metadata, dict) else None
+
+
 def parser():
     result = argparse.ArgumentParser(description="Collect read-only VMware Cloud Foundation component inventory.")
     result.add_argument("--config", type=Path, help="JSON configuration file")
@@ -26,6 +31,7 @@ def parser():
     result.add_argument("--csv", action="store_true", help="Write flattened CSV files alongside JSON")
     result.add_argument("--list-resources", action="store_true", help="Print resource names and API paths; no network")
     result.add_argument("--validate-config", action="store_true", help="Validate configuration structure; no network or secrets")
+    result.add_argument("--preflight", action="store_true", help="Probe selected APIs and permissions without collecting full inventories")
     return result
 
 
@@ -59,6 +65,12 @@ def main(argv=None, component_scope=None):
         run_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
         run_directory = args.output.resolve() / run_name
         run_directory.mkdir(parents=True, exist_ok=False)
+        if args.preflight:
+            from .preflight import run_preflight
+            report = run_preflight(targets, config)
+            write_json(run_directory / "preflight.json", report)
+            print(f"Preflight: {run_directory / 'preflight.json'}")
+            return 0 if report["status"] == "success" else 2
         summary = {"author": "Paul Bryant", "schema_version": "2.0", "started_at": utc_now(),
                    "scope": "Resources visible to each configured account and within configured API scopes.",
                    "targets": [], "status": "running"}
@@ -98,9 +110,17 @@ def main(argv=None, component_scope=None):
                             metadata["site_id"] = target.get("site_id", "default")
                             metadata["enforcement_point_id"] = target.get("enforcement_point_id", "default")
                             metadata["domain_id"] = target.get("domain_id", "default")
-                        for option in ("api_family", "api_version", "org_id", "pairing_id", "source_vc_guid", "version"):
+                        for option in ("api_family", "api_version", "org_id", "pairing_id", "source_vc_guid", "version",
+                                       "domain_ids", "task_days", "certificate_attention_days", "policy_ids", "srm_ids", "resource_ids", "stat_keys"):
                             if option in target:
                                 metadata[option] = target[option]
+                        if resource == "failed_tasks":
+                            metadata.setdefault("task_days", 30)
+                        if resource == "certificates":
+                            metadata.setdefault("certificate_attention_days", 60)
+                        collection = collection_details(client, resource)
+                        if collection is not None:
+                            metadata["collection"] = collection
                         write_resource(run_directory / target["name"], resource, records, metadata, write_csv=args.csv)
                         result.update(status="success", record_count=len(records), file=f"{target['name']}/{resource}.json")
                         print(f"{target['name']}/{resource}: {len(records)} records")
@@ -109,6 +129,9 @@ def main(argv=None, component_scope=None):
                         failed = True
                         print(f"{target['name']}/{resource}: {exc}", file=sys.stderr)
                 result["completed_at"] = utc_now()
+                collection = collection_details(client, resource) if client else None
+                if collection is not None:
+                    result["collection"] = collection
                 write_json(run_directory / "summary.json", summary)
             if client is not None:
                 try:

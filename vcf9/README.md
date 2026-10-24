@@ -4,6 +4,8 @@ By Paul Bryant
 
 The [additional VCF 9.1.1 reports](ADDITIONAL_REPORTS.md) add 5 NSX, 5 Operations, 5 SDDC Manager, and 15 Protection and Recovery commands.
 
+The [shared API collectors](api_collectors/README.md) add Fleet LCM, multi-component inventory, preflight, large vCenter collection, latest metrics, comparisons, and identifier-based relationships. Certificate, failed-task, firewall-rule, catalog, collector-state, and recovery-mapping resources also use the shared transport and JSON/CSV output. Existing standalone reports remain available below.
+
 These examples collect a small operational baseline without changing infrastructure. They target the VCF 9.1.x product line and VCF PowerCLI 9.1.x. The original repository examples remain scoped to their earlier product generations.
 
 | Report | Data collected | Tool |

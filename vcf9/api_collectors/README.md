@@ -2,7 +2,7 @@
 
 Author: Paul Bryant
 
-Read-only Python collectors for VCF management inventory, vCenter, HCX, NSX, VCF Operations, VCF Automation, Live Site Recovery, and vSphere Replication. Run one product script or collect several explicitly configured targets together. Each run exports JSON, optional CSV, and a summary identifying failed collections.
+Read-only Python collectors for VCF Fleet Management, SDDC Manager, vCenter, HCX, NSX, VCF Operations, VCF Automation, Live Site Recovery, and vSphere Replication. Run one product script or collect several explicitly configured targets together. Each run exports JSON, optional CSV, and a summary identifying failed collections. Shared tools probe API access, compare completed runs, and build relationships from explicit identifiers.
 
 The implementation follows the public API contracts linked below. It has offline tests and has not been exercised against live appliances. A VCF product version does not establish the version of every connected component. Confirm the documented methods and authentication policies against each installed build; no blanket compatibility across all VCF 9.x releases is claimed.
 
@@ -10,15 +10,18 @@ The implementation follows the public API contracts linked below. It has offline
 
 | Script | Information collected |
 | --- | --- |
+| `collect_vcf_fleet.py` | Fleet LCM components, component nodes, component status |
 | `collect_vcf.py` | SDDC appliance information, workload domains, clusters, hosts, vCenters, NSX clusters, network pools; vCenter datacenters, clusters, hosts, datastores, networks, VMs |
 | `collect_hcx.py` | Site pairings, compute profiles, service meshes, appliances, network extensions |
 | `collect_nsx.py` | Segments, Tier-0/Tier-1 gateways, host/edge transport nodes, transport zones, groups, security policies, IP pools |
-| `collect_vcf_operations.py` | Monitored resources, adapters, alerts, policy summaries |
+| `collect_vcf_operations.py` | Monitored resources, adapters, alerts, policy summaries; optional latest metrics, relationships and collectors |
 | `collect_vcf_automation.py` | Projects, blueprints, deployments; VM Apps cloud accounts, cloud zones and fabric networks; provider organizations, regions, zones, namespace summaries and VPCs |
 | `collect_vcf_protection_recovery.py` | Live Site Recovery pairings, protection groups and recovery plans; vSphere Replication pairings and extended replication status |
 | `collect.py` | All target types selected in the configuration |
 
 The VCF script selects SDDC Manager and vCenter targets. Protection and Recovery selects both recovery components. Other product scripts restrict collection to their named component. `--target` further narrows the configured target names.
+
+Optional resources add SDDC certificate metadata and failed tasks, NSX firewall rules, Automation catalog availability, Operations collector state, and Live Site Recovery inventory mappings through the shared connection and export layer. Select these explicitly using [the operational example](examples/operational.example.json) and [scope guide](docs/operational.md).
 
 ## Setup
 
@@ -67,6 +70,7 @@ Use raw tokens without an authorization scheme prefix. Secrets are temporarily a
 
 | Component | Authentication |
 | --- | --- |
+| VCF Fleet | Existing bearer JWT in `token_env`, sent to the Fleet LCM API |
 | SDDC Manager | `username_env` and `password_env`; token creation through `/v1/tokens` |
 | vCenter | `username_env` and `password_env`; API session creation and cleanup |
 | NSX | `username_env` and `password_env`; Basic authentication over verified HTTPS |
@@ -81,6 +85,7 @@ See [Operations authentication](docs/operations.md), [Automation API families](d
 
 ```powershell
 python .\collect_vcf.py --config .\config.json --output .\inventory --csv
+python .\collect_vcf_fleet.py --config .\config.json --output .\inventory --csv
 python .\collect_nsx.py --config .\config.json --output .\inventory --csv
 python .\collect_hcx.py --config .\config.json --output .\inventory --csv
 python .\collect_vcf_operations.py --config .\config.json --output .\inventory --csv
@@ -101,7 +106,9 @@ Each target requires a unique `name`, a `component`, and an HTTPS origin `url`. 
 - NSX: `site_id`, `enforcement_point_id`, and `domain_id`, each defaulting to `default`.
 - vCenter and Operations: `filters` groups query parameters by resource name. Operations validates documented names; verify vCenter names against the installed API.
 - HCX: `auth_source` is `credentials`, `session_token`, or `vcf_sso`.
+- Fleet: `token_env` names an existing bearer JWT. See [Fleet LCM scope and pagination](docs/fleet.md).
 - Operations: `auth_source` names a configured source for password login; `token_scheme` applies only to existing tokens.
+- Operations metrics and relationships: explicit `resource_ids`, plus `stat_keys` for `latest_metrics`. [The metrics guide](docs/operations.md) describes timestamps, values, units, and unavailable samples.
 - Automation: `api_family` is required. Provider targets also require `api_version`; optional `org_id` sets organization context.
 - Recovery: `auth_source` is `credentials` or `session_token`; only API `v2` is implemented. Paired credential mode requires `pairing_id`, `remote_username_env`, and `remote_password_env`. Replication optionally accepts `source_vc_guid`.
 
@@ -120,9 +127,23 @@ Recognized secret-bearing fields are redacted recursively. CSV flattens objects,
 
 Paged APIs check available counts and cursors and fail at the configured limit. Collection does not create a point-in-time snapshot of a changing platform. Results cover only objects visible to the account and selected API context.
 
-vCenter list boundaries are 1,000 for [datacenters](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/datacenter/get/), [clusters](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/cluster/get/), and [networks](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/network/get/); 2,500 for [hosts](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/host/get/) and [datastores](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/datastore/get/); and 4,000 for [VMs](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/vm/get/). The collector conservatively rejects responses reaching these boundaries. Collect narrower scopes separately using filters, following [Broadcom's partitioning guidance](https://knowledge.broadcom.com/external/article/301570/obtaining-information-for-more-than-4000.html).
+vCenter list boundaries are 1,000 for [datacenters](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/datacenter/get/), [clusters](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/cluster/get/), and [networks](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/network/get/); 2,500 for [hosts](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/host/get/) and [datastores](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/datastore/get/); and 4,000 for [VMs](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/vcenter/vm/get/). Boundary responses trigger coverage-preserving partition attempts, following [Broadcom's partitioning guidance](https://knowledge.broadcom.com/external/article/301570/obtaining-information-for-more-than-4000.html). Original filters remain in force; deduplication and verification must succeed before export. Unresolvable scopes fail with coverage evidence in the summary. See [large inventory collection](docs/vcenter_partitioning.md).
 
 NSX covers local `/infra`, the configured domain, and selected site/enforcement point, without enumerating all project or Global Manager scopes. Legacy transport resources require explicit selection. Automation families have separate permissions and schemas. Recovery collection does not run tests, failovers, or reconfiguration. These are inventory exports, not complete backups, licensing assessments, or security conclusions.
+
+## Preflight, comparisons, and relationships
+
+```powershell
+python .\collect.py --config .\config.json --preflight --output .\reports
+python .\compare_runs.py --before .\inventory\earlier-run --after .\inventory\later-run --output .\reports\comparison.json --csv
+python .\build_relationships.py --run .\inventory\selected-run --output .\reports\relationships.json --csv
+```
+
+Preflight sends bounded representative requests, records version fields where documented, and distinguishes inaccessible, missing, and unprobed endpoints. It does not establish every permission or build compatibility. See [preflight behavior](docs/preflight.md).
+
+Comparisons require finished runs, successful resources, matching scopes, and unambiguous stable identifiers. Failed or missing collections never imply removed objects. See [comparison behavior](docs/comparison.md).
+
+Relationship reports use explicit API references, unique management endpoint matches, and optional operator-defined identifier rules. They flag ambiguous or unresolved matches. They do not infer topology from display names or establish that missing relationships do not exist. See [relationship scope](docs/relationships.md).
 
 ## Connections
 
@@ -137,11 +158,11 @@ python -m unittest discover -s tests -v
 python collect.py --config config.example.json --validate-config
 ```
 
-Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
+Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, and `vcf-relationships`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
 
 ## Public API documentation
 
 - SDDC Manager: [appliance information](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/system/appliance-info/get/), [tokens](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/tokens/post/), [domains](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/domains/get/), [clusters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/clusters/get/), [hosts](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/hosts/get/), [vCenters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/vcenters/get/), [NSX clusters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/nsxt-clusters/get/), [network pools](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/network-pools/get/).
 - vCenter: the list APIs above, [session creation](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/session/post/), and [session cleanup](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/session/delete/).
 - NSX: [9.0 API guide](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/9.0.0/), [segments](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListAllInfraSegments.html), [Tier-0](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier0s.html), [Tier-1](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier1.html), [host transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListHostTransportNodes.html), [edge transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListPolicyEdgeTransportNode.html), [transport zones](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTransportZonesForEnforcementPoint.html), [groups](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListGroupForDomain.html), [security policies](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListSecurityPoliciesForDomain.html), [IP pools](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListIpAddressPools.html).
-- Product-specific methods and release details: [HCX and recovery](docs/hcx_recovery.md), [Operations](docs/operations.md), [Automation](docs/automation.md).
+- Product-specific methods and release details: [Fleet LCM](docs/fleet.md), [HCX and recovery](docs/hcx_recovery.md), [Operations](docs/operations.md), [Automation](docs/automation.md), [operational resources](docs/operational.md).

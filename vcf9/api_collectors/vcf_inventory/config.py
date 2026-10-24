@@ -52,12 +52,13 @@ def load_config(path):
     seen = set()
     common_fields = {"name", "component", "url", "username_env", "password_env", "resources", "verify_tls", "version"}
     component_fields = {
-        "sddc_manager": set(), "vcenter": {"filters"},
-        "nsx": {"site_id", "enforcement_point_id", "domain_id"},
+        "sddc_manager": {"task_days", "certificate_attention_days", "domain_ids"}, "vcenter": {"filters"},
+        "nsx": {"site_id", "enforcement_point_id", "domain_id", "policy_ids"},
+        "vcf_fleet": {"token_env"},
         "hcx": {"auth_source", "token_env"},
-        "vcf_operations": {"auth_source", "token_env", "token_scheme", "filters"},
+        "vcf_operations": {"auth_source", "token_env", "token_scheme", "filters", "resource_ids", "stat_keys"},
         "vcf_automation": {"api_family", "token_env", "api_version", "org_id"},
-        "live_site_recovery": {"auth_source", "token_env", "api_version", "pairing_id", "remote_username_env", "remote_password_env"},
+        "live_site_recovery": {"auth_source", "token_env", "api_version", "pairing_id", "remote_username_env", "remote_password_env", "srm_ids"},
         "vsphere_replication": {"auth_source", "token_env", "api_version", "pairing_id", "remote_username_env", "remote_password_env", "source_vc_guid"},
     }
     for target in targets:
@@ -101,8 +102,8 @@ def load_config(path):
             has_credentials = any(target.get(f) for f in ("username_env", "password_env"))
             if (has_token and has_credentials) or (not has_token and not all(target.get(f) for f in ("username_env", "password_env"))):
                 raise ConfigError(f"Target {name}: supply token_env or both username_env and password_env.")
-        if component == "vcf_automation" and any(f in target for f in ("username_env", "password_env")):
-            raise ConfigError(f"Target {name}: VCF Automation uses token_env authentication.")
+        if component in ("vcf_automation", "vcf_fleet") and any(f in target for f in ("username_env", "password_env")):
+            raise ConfigError(f"Target {name}: this component uses token_env authentication.")
         verify = target.setdefault("verify_tls", True)
         if verify is not True:
             if not isinstance(verify, str) or not verify:
@@ -142,6 +143,11 @@ def load_config(path):
                 values = value if isinstance(value, list) else [value]
                 if not values or any(type(v) not in (str, int, float, bool) or (type(v) is float and not math.isfinite(v)) for v in values):
                     raise ConfigError(f"Target {name}: filter values must be scalar values or nonempty arrays.")
+        from .operational import validate_target as validate_operational
+        try:
+            validate_operational(target)
+        except ValueError as exc:
+            raise ConfigError(f"Target {name}: {exc}") from None
         product = module_for(component)
         if product is not None and hasattr(product, "validate_target"):
             try:

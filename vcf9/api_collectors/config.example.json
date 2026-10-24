@@ -5,6 +5,7 @@
   "page_size": 100,
   "max_pages": 1000,
   "targets": [
+    {"name": "fleet01", "component": "vcf_fleet", "url": "https://fleet.example.com", "token_env": "VCF_FLEET_TOKEN", "verify_tls": true},
     {"name": "sddc01", "component": "sddc_manager", "url": "https://sddc-manager.example.com", "username_env": "SDDC_USERNAME", "password_env": "SDDC_PASSWORD", "verify_tls": true},
     {"name": "vcenter01", "component": "vcenter", "url": "https://vcenter.example.com", "username_env": "VCENTER_USERNAME", "password_env": "VCENTER_PASSWORD", "verify_tls": true},
     {"name": "nsx01", "component": "nsx", "url": "https://nsx-manager.example.com", "username_env": "NSX_USERNAME", "password_env": "NSX_PASSWORD", "site_id": "default", "enforcement_point_id": "default", "domain_id": "default", "verify_tls": true},
