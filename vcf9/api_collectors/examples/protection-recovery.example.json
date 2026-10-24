@@ -1,0 +1,7 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {"name": "site-recovery-pair", "component": "live_site_recovery", "url": "https://site-recovery.example.com", "username_env": "RECOVERY_USERNAME", "password_env": "RECOVERY_PASSWORD", "pairing_id": "replace-with-pairing-id", "remote_username_env": "RECOVERY_REMOTE_USERNAME", "remote_password_env": "RECOVERY_REMOTE_PASSWORD", "resources": ["pairings", "protection_groups", "recovery_plans"], "verify_tls": true},
+    {"name": "replication-pair", "component": "vsphere_replication", "url": "https://replication.example.com", "username_env": "REPLICATION_USERNAME", "password_env": "REPLICATION_PASSWORD", "pairing_id": "replace-with-pairing-id", "remote_username_env": "REPLICATION_REMOTE_USERNAME", "remote_password_env": "REPLICATION_REMOTE_PASSWORD", "resources": ["pairings", "replications"], "verify_tls": true}
+  ]
+}

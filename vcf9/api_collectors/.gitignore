@@ -1,0 +1,21 @@
+# Author: Paul Bryant
+__pycache__/
+*.py[cod]
+.venv/
+config.json
+config.*.json
+!config.example.json
+inventory/
+results/
+exports/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage

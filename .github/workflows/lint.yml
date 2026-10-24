@@ -1,3 +1,4 @@
+# Author: Paul Bryant
 name: Script checks
 
 on: [push, pull_request]
@@ -13,6 +14,9 @@ jobs:
       - name: Compile Python files
         run: python -m compileall -q nsx srm vsphere vcf9
       - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Run API collector unit tests
+        working-directory: vcf9/api_collectors
         run: python -m unittest discover -s tests -v
 
   powershell:

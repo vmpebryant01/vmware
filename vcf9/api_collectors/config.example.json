@@ -1,0 +1,17 @@
+{
+  "author": "Paul Bryant",
+  "timeout_seconds": 30,
+  "retries": 2,
+  "page_size": 100,
+  "max_pages": 1000,
+  "targets": [
+    {"name": "sddc01", "component": "sddc_manager", "url": "https://sddc-manager.example.com", "username_env": "SDDC_USERNAME", "password_env": "SDDC_PASSWORD", "verify_tls": true},
+    {"name": "vcenter01", "component": "vcenter", "url": "https://vcenter.example.com", "username_env": "VCENTER_USERNAME", "password_env": "VCENTER_PASSWORD", "verify_tls": true},
+    {"name": "nsx01", "component": "nsx", "url": "https://nsx-manager.example.com", "username_env": "NSX_USERNAME", "password_env": "NSX_PASSWORD", "site_id": "default", "enforcement_point_id": "default", "domain_id": "default", "verify_tls": true},
+    {"name": "hcx01", "component": "hcx", "url": "https://hcx-manager.example.com", "auth_source": "credentials", "username_env": "HCX_USERNAME", "password_env": "HCX_PASSWORD", "verify_tls": true},
+    {"name": "operations01", "component": "vcf_operations", "url": "https://operations.example.com", "token_env": "VCF_OPERATIONS_TOKEN", "token_scheme": "OpsToken", "verify_tls": true},
+    {"name": "automation-all-apps", "component": "vcf_automation", "url": "https://automation.example.com", "api_family": "all_apps", "token_env": "VCFA_ALL_APPS_ACCESS_TOKEN", "verify_tls": true},
+    {"name": "site-recovery01", "component": "live_site_recovery", "url": "https://site-recovery.example.com", "username_env": "RECOVERY_USERNAME", "password_env": "RECOVERY_PASSWORD", "resources": ["pairings"], "verify_tls": true},
+    {"name": "replication01", "component": "vsphere_replication", "url": "https://replication.example.com", "username_env": "REPLICATION_USERNAME", "password_env": "REPLICATION_PASSWORD", "resources": ["pairings"], "verify_tls": true}
+  ]
+}
