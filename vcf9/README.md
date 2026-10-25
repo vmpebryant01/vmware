@@ -8,7 +8,7 @@ The [shared API collectors](api_collectors/README.md) add Fleet LCM, multi-compo
 
 These examples collect a small operational baseline without changing infrastructure. They target the VCF 9.1.x product line and VCF PowerCLI 9.1.x. The original repository examples remain scoped to their earlier product generations.
 
-The [seven saved-run operational reports](api_collectors/docs/reports.md) add backup freshness, explicit protection requirements, cached vSAN health and capacity, HCX migration progress, vCenter access assignments, NSX rule counters, and Automation request exceptions. Their additional resources are selected explicitly; the existing default collections retain their scope.
+The [eleven saved-run operational reports](api_collectors/docs/reports.md) add backup freshness, explicit protection requirements, cached vSAN health and capacity, HCX migration progress, vCenter access assignments, NSX rule counters, Automation request exceptions, lifecycle compliance, vCenter service settings, historical metric windows, and Supervisor/namespace state. Their additional resources are selected explicitly; the existing default collections retain their scope. The [live validation tool](api_collectors/docs/live_validation.md) applies request limits to actual collector runs and exports numeric build evidence with optional structural fixtures.
 
 | Report | Data collected | Tool |
 | --- | --- | --- |

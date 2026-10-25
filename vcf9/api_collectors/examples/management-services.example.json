@@ -1,0 +1,13 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {
+      "name": "management-vcenter",
+      "component": "vcenter",
+      "url": "https://vcenter.example.com",
+      "username_env": "VCENTER_USERNAME",
+      "password_env": "VCENTER_PASSWORD",
+      "resources": ["appliance_dns", "appliance_ntp", "appliance_timesync", "appliance_syslog"]
+    }
+  ]
+}

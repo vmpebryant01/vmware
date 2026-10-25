@@ -10,7 +10,8 @@ from .report_support import read_policy
 from .runs import RunError, load_run
 
 REPORTS = ("backup_freshness", "protection_gaps", "vsan_health", "hcx_migrations",
-           "access_permissions", "nsx_rule_usage", "automation_requests")
+           "access_permissions", "nsx_rule_usage", "automation_requests", "lifecycle_compliance",
+           "management_services", "metric_history", "supervisor_health")
 
 
 def _option(options, name, default):
@@ -18,6 +19,18 @@ def _option(options, name, default):
 
 
 def build_report(report_type, run, previous=None, **options):
+    if report_type == "lifecycle_compliance":
+        from .lifecycle_report import build_lifecycle_report
+        return build_lifecycle_report(run, max_scan_age_hours=_option(options, "max_scan_age_hours", 24), now=options.get("now"))
+    if report_type == "management_services":
+        from .management_services_report import build_management_services_report
+        return build_management_services_report(run, baseline=options.get("baseline"))
+    if report_type == "metric_history":
+        from .metric_history_report import build_metric_history_report
+        return build_metric_history_report(run)
+    if report_type == "supervisor_health":
+        from .supervisor_report import build_supervisor_report
+        return build_supervisor_report(run, max_used_percent=_option(options, "max_used_percent", 80))
     if report_type in ("backup_freshness", "access_permissions"):
         from .assurance_reports import build_access_report, build_backup_report
         if report_type == "backup_freshness":
@@ -51,9 +64,10 @@ def main(argv=None, report_type=None):
     parser.add_argument("--csv", action="store_true", help="Also write a records JSON/CSV pair")
     parser.add_argument("--previous", type=Path, help="Earlier completed run for HCX progress or NSX counters")
     parser.add_argument("--policy", type=Path, help="Protection requirements JSON, required for protection gaps")
-    parser.add_argument("--baseline", type=Path, help="Optional access-assignment baseline JSON")
+    parser.add_argument("--baseline", type=Path, help="Access-assignment or management-service baseline JSON")
     parser.add_argument("--max-age-hours", type=float, help="Backup freshness threshold, default 24 hours")
-    parser.add_argument("--max-used-percent", type=float, help="vSAN capacity review threshold, default 80 percent")
+    parser.add_argument("--max-used-percent", type=float, help="vSAN or Supervisor capacity review threshold, default 80 percent")
+    parser.add_argument("--max-scan-age-hours", type=float, help="Cached lifecycle scan age threshold, default 24 hours")
     parser.add_argument("--stalled-minutes", type=float, help="HCX unchanged-progress observation interval, default 30 minutes")
     parser.add_argument("--long-running-minutes", type=float, help="Automation request age threshold, default 60 minutes")
     parser.add_argument("--broad-privilege-threshold", type=int, help="Access role privilege-count review threshold, default 100")
@@ -66,11 +80,13 @@ def main(argv=None, report_type=None):
             "backup_freshness": {"max_age_hours", "nsx_time_unit"}, "protection_gaps": {"policy"}, "vsan_health": {"max_used_percent"},
             "hcx_migrations": {"previous", "stalled_minutes", "hcx_time_unit"}, "access_permissions": {"baseline", "broad_privilege_threshold"},
             "nsx_rule_usage": {"previous"}, "automation_requests": {"long_running_minutes"},
+            "lifecycle_compliance": {"max_scan_age_hours"}, "management_services": {"baseline"},
+            "metric_history": set(), "supervisor_health": {"max_used_percent"},
         }
         if selected not in allowed_options:
             raise ValueError("Unknown report type.")
         for field in ("max_age_hours", "max_used_percent", "stalled_minutes", "long_running_minutes",
-                      "broad_privilege_threshold", "policy", "baseline", "previous", "nsx_time_unit", "hcx_time_unit"):
+                      "broad_privilege_threshold", "policy", "baseline", "previous", "nsx_time_unit", "hcx_time_unit", "max_scan_age_hours"):
             if getattr(args, field) is not None and field not in allowed_options[selected]:
                 raise ValueError("An option does not apply to the selected report.")
         if selected == "protection_gaps" and args.policy is None:
@@ -93,7 +109,8 @@ def main(argv=None, report_type=None):
                               max_age_hours=args.max_age_hours, max_used_percent=args.max_used_percent,
                               stalled_minutes=args.stalled_minutes, long_running_minutes=args.long_running_minutes,
                               broad_privilege_threshold=args.broad_privilege_threshold,
-                              nsx_time_unit=args.nsx_time_unit, hcx_time_unit=args.hcx_time_unit)
+                              nsx_time_unit=args.nsx_time_unit, hcx_time_unit=args.hcx_time_unit,
+                              max_scan_age_hours=args.max_scan_age_hours)
         if not isinstance(report, dict) or not isinstance(report.get("records"), list):
             raise ValueError("Report builder returned invalid records.")
         report.update(author="Paul Bryant", evaluated_at=now.isoformat(timespec="seconds"),

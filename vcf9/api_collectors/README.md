@@ -23,7 +23,19 @@ The VCF script selects SDDC Manager and vCenter targets. Protection and Recovery
 
 Optional resources add SDDC certificate metadata and failed tasks, NSX firewall rules, Automation catalog availability, Operations collector state, and Live Site Recovery inventory mappings through the shared connection and export layer. Select these explicitly using [the operational example](examples/operational.example.json) and [scope guide](docs/operational.md).
 
-Seven [saved-run reports](docs/reports.md) add backup freshness, required VM protection, vSAN health and capacity, HCX migrations, vCenter access assignments, NSX rule usage, and Automation request exceptions. Collect their optional resources with [the report collection example](examples/report-collection.example.json), then run the individual `report_*.py` commands offline. The guide includes protection-policy and access-baseline examples.
+Eleven [saved-run reports](docs/reports.md) add backup freshness, required VM protection, vSAN health and capacity, HCX migrations, vCenter access assignments, NSX rule usage, Automation request exceptions, lifecycle compliance, management-service configuration, historical metrics, and Supervisor/namespace state. Collect their optional resources with [the report collection example](examples/report-collection.example.json) or [the maintenance example](examples/operations-maintenance.example.json), then run the individual `report_*.py` commands offline. The guide includes protection-policy and baseline examples.
+
+Five additional tools provide bounded live validation and operational evidence:
+
+| Command | Purpose and guide |
+| --- | --- |
+| `validate_live_api.py` | [Live collector contracts](docs/live_validation.md), numeric build evidence, request limits and value-free structural fixtures |
+| `report_lifecycle_compliance.py` | [Desired image and cached vLCM compliance](docs/lifecycle.md) for explicit image-managed clusters |
+| `report_management_services.py` | [vCenter DNS, NTP, time synchronization and syslog settings](docs/management_services.md), with an optional exact baseline |
+| `report_metric_history.py` | [Operations historical samples](docs/metric_history.md), rollup-aware statistics, coverage estimates and period comparisons |
+| `report_supervisor_health.py` | [Supervisor conditions and capacity, namespace usage and quotas](docs/supervisor.md) for explicit identifiers |
+
+The live validator contacts configured targets when run, but no appliance test results are included. Report commands read saved runs only. The new collection resources use GET requests and remain optional.
 
 vSAN uses `component: vsan` through `collect.py`, explicit `cluster_ids`, and a dedicated verified JSON API session. It reads cached health and physical capacity with documented query operations. See [the vSAN guide](docs/vsan.md). These resources are not selected by the default SDDC Manager/vCenter script.
 
@@ -117,6 +129,7 @@ Each target requires a unique `name`, a `component`, and an HTTPS origin `url`. 
 - Automation: `api_family` is required. Provider targets also require `api_version`; optional `org_id` sets organization context.
 - Recovery: `auth_source` is `credentials` or `session_token`; only API `v2` is implemented. Paired credential mode requires `pairing_id`, `remote_username_env`, and `remote_password_env`. Replication optionally accepts `source_vc_guid`.
 - Additional report resources: Live Site Recovery `group_ids`, NSX optional per-policy `rule_ids`, and Automation `deployment_ids` constrain the new queries. See [report scopes](docs/reports.md), [assurance resources](docs/assurance.md), and [activity resources](docs/activity.md).
+- Maintenance resources: vCenter `lifecycle_cluster_ids`, `supervisor_ids` and `namespace_ids` identify explicit scopes; Operations `metric_history` defines selected windows and rollup settings. See [the maintenance example](examples/operations-maintenance.example.json) and the four report guides above.
 
 ## Output and completeness
 
@@ -147,6 +160,8 @@ python .\build_relationships.py --run .\inventory\selected-run --output .\report
 
 Preflight sends bounded representative requests, records version fields where documented, and distinguishes inaccessible, missing, and unprobed endpoints. It does not establish every permission or build compatibility. See [preflight behavior](docs/preflight.md).
 
+The [live validator](docs/live_validation.md) additionally exercises real collector response and pagination checks for explicitly selected resources. It applies a per-target request budget and produces an observed-version matrix. Use `--capture-fixtures` for partial structural fixtures without response scalar values or dynamic key names. These fixtures are not replayable inventory exports.
+
 Comparisons require finished runs, successful resources, matching scopes, and unambiguous stable identifiers. Failed or missing collections never imply removed objects. See [comparison behavior](docs/comparison.md).
 
 Relationship reports use explicit API references, unique management endpoint matches, and optional operator-defined identifier rules. They flag ambiguous or unresolved matches. They do not infer topology from display names or establish that missing relationships do not exist. See [relationship scope](docs/relationships.md).
@@ -164,7 +179,7 @@ python -m unittest discover -s tests -v
 python collect.py --config config.example.json --validate-config
 ```
 
-Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, `vcf-relationships`, and `vcf-report`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
+Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, `vcf-relationships`, `vcf-report`, and `vcf-validate-live`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
 
 ## Public API documentation
 
@@ -173,3 +188,4 @@ Tests simulate API responses without contacting appliances. Optional `python -m 
 - NSX: [9.0 API guide](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/9.0.0/), [segments](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListAllInfraSegments.html), [Tier-0](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier0s.html), [Tier-1](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier1.html), [host transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListHostTransportNodes.html), [edge transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListPolicyEdgeTransportNode.html), [transport zones](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTransportZonesForEnforcementPoint.html), [groups](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListGroupForDomain.html), [security policies](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListSecurityPoliciesForDomain.html), [IP pools](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListIpAddressPools.html).
 - Product-specific methods and release details: [Fleet LCM](docs/fleet.md), [HCX and recovery](docs/hcx_recovery.md), [Operations](docs/operations.md), [Automation](docs/automation.md), [operational resources](docs/operational.md).
 - Additional report APIs and limits: [backup and authorization](docs/assurance.md), [vSAN](docs/vsan.md), [activity](docs/activity.md), [protection evidence and report commands](docs/reports.md).
+- Maintenance APIs and limits: [lifecycle](docs/lifecycle.md), [management services](docs/management_services.md), [historical metrics](docs/metric_history.md), [Supervisor and namespaces](docs/supervisor.md), [live validation](docs/live_validation.md).

@@ -112,7 +112,8 @@ def main(argv=None, component_scope=None):
                             metadata["domain_id"] = target.get("domain_id", "default")
                         for option in ("api_family", "api_version", "org_id", "pairing_id", "source_vc_guid", "version",
                                        "domain_ids", "task_days", "certificate_attention_days", "policy_ids", "srm_ids", "resource_ids", "stat_keys",
-                                       "group_ids", "rule_ids", "deployment_ids", "cluster_ids"):
+                                       "group_ids", "rule_ids", "deployment_ids", "cluster_ids", "lifecycle_cluster_ids",
+                                       "supervisor_ids", "namespace_ids", "metric_history"):
                             if option in target:
                                 metadata[option] = target[option]
                         if resource == "failed_tasks":

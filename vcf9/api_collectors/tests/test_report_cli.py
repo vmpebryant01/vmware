@@ -50,7 +50,7 @@ class ReportCommandTests(unittest.TestCase):
         self.policy.write_text(json.dumps({"author": "Paul Bryant", "requirements": [{"vcenter_target": "vc", "vm_id": "vm-1",
             "replication": {"target": "vr", "pairing_id": "pair", "source_vc_id": "vc-id", "vm_id": "native-vm"}}]}), encoding="utf-8")
 
-    def test_all_seven_commands_write_actual_json_and_csv_without_network(self):
+    def test_all_report_commands_write_actual_json_and_csv_without_network(self):
         with patch("vcf_inventory.http_client.build_opener") as opener, patch("sys.stdout", new_callable=io.StringIO):
             for report_type in reporting.REPORTS:
                 with self.subTest(report=report_type):
@@ -96,8 +96,11 @@ class ReportCommandTests(unittest.TestCase):
         with patch("vcf_inventory.http_client.build_opener") as opener:
             for file in (toolkit / "examples").glob("*.json"):
                 content = json.loads(file.read_text(encoding="utf-8-sig"))
-                if "targets" in content:
+                if "targets" in content and all("component" in row for row in content["targets"]):
                     load_config(file)
+                elif "targets" in content:
+                    from vcf_inventory.management_services_report import validate_baseline
+                    validate_baseline(content)
                 if "requirements" in content:
                     validate_policy(content)
         opener.assert_not_called()

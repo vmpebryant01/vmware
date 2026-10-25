@@ -12,7 +12,8 @@ from .runs import RunError, identity_for, load_run
 SCOPE_FIELDS = ("endpoint", "scope_filters", "site_id", "enforcement_point_id", "domain_id",
                 "api_family", "api_version", "org_id", "pairing_id", "source_vc_guid", "domain_ids",
                 "task_days", "certificate_attention_days", "policy_ids", "srm_ids", "resource_ids", "stat_keys",
-                "group_ids", "rule_ids", "deployment_ids", "cluster_ids")
+                "group_ids", "rule_ids", "deployment_ids", "cluster_ids", "lifecycle_cluster_ids",
+                "supervisor_ids", "namespace_ids", "metric_history")
 DEFAULT_IGNORES = ("_links", "links")
 HISTORY_RESOURCES = {"failed_tasks", "backup_jobs", "backup_history", "migrations", "deployment_requests"}
 
@@ -52,6 +53,26 @@ def _resolved_scope(document, resource):
     details = document.get("collection")
     details = details if isinstance(details, dict) else {}
     result = {}
+    if resource in ("lifecycle_desired_image", "lifecycle_compliance", "supervisor_summaries", "supervisor_conditions", "namespaces"):
+        if resource.startswith("lifecycle_"):
+            selected, queried = details.get("configured_cluster_ids"), details.get("queried_cluster_ids")
+        else:
+            selector = "namespace_ids" if resource == "namespaces" else "supervisor_ids"
+            selected, queried = details.get(selector), details.get("queried_ids")
+        if (details.get("coverage") != "complete" or not isinstance(selected, list) or not selected
+                or any(not isinstance(value, str) or not value for value in selected)
+                or len(set(selected)) != len(selected) or not isinstance(queried, list)
+                or any(not isinstance(value, str) for value in queried)
+                or len(queried) != len(selected) or set(queried) != set(selected)):
+            return None
+        result["explicit_ids"] = sorted(selected)
+    if resource == "metric_history":
+        from .metric_history import validated_scope
+        required = ("resource_ids", "stat_keys", "windows", "requested_rollup_type",
+                    "requested_interval_type", "requested_interval_quantifier")
+        if validated_scope(details) is None:
+            return None
+        result.update({field: details[field] for field in required})
     if resource in ("protection_groups", "recovery_plans", "replications", "group_vms"):
         pairings = details.get("queried_pairing_ids", [document["pairing_id"]] if document.get("pairing_id") else None)
         if not isinstance(pairings, list) or any(not isinstance(value, str) or not value for value in pairings):

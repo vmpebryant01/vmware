@@ -2,7 +2,7 @@
 
 Author: Paul Bryant
 
-The seven report commands read a completed inventory run and write JSON, with optional CSV. They make no network requests. Collect the additional resources first using the existing runner and [the report collection example](../examples/report-collection.example.json). Existing default inventories are unchanged. Replace all example targets and native identifiers with values verified for the installed services.
+The eleven report commands read a completed inventory run and write JSON, with optional CSV. They make no network requests. Collect the additional resources first using the existing runner and [the report collection example](../examples/report-collection.example.json) or [the maintenance example](../examples/operations-maintenance.example.json). Existing default inventories are unchanged. Replace all example targets and native identifiers with values verified for the installed services.
 
 ```powershell
 python .\collect.py --config .\examples\report-collection.example.json --validate-config
@@ -20,6 +20,10 @@ Use an actual generated run folder for `--run` in the examples below. Report out
 | `report_access_permissions.py` | vCenter `authorization_roles`, `authorization_permissions` | Explicit role assignments, propagation, privilege counts, and optional baseline exceptions |
 | `report_nsx_rule_usage.py` | NSX `rule_statistics` | Native counters and comparable observation intervals, separated by enforcement context |
 | `report_automation_requests.py` | Automation `deployment_requests` | Request status and age relative to the saved collection time |
+| `report_lifecycle_compliance.py` | vCenter `lifecycle_desired_image`, `lifecycle_compliance` | Desired image, cached cluster/host compliance and scan freshness |
+| `report_management_services.py` | vCenter `appliance_dns`, `appliance_ntp`, `appliance_timesync`, `appliance_syslog` | Configured settings and optional exact baseline differences |
+| `report_metric_history.py` | Operations `metric_history` | Returned-sample statistics, cadence coverage estimates and period comparisons |
+| `report_supervisor_health.py` | vCenter `supervisor_summaries`, `supervisor_conditions`, `namespaces` | Native Supervisor state, usage/capacity and namespace quotas |
 
 ```powershell
 python .\report_backup_freshness.py --run .\inventory\selected-run --output .\reports\backups.json --max-age-hours 24 --csv
@@ -29,9 +33,17 @@ python .\report_hcx_migrations.py --run .\inventory\selected-run --previous .\in
 python .\report_access_permissions.py --run .\inventory\selected-run --baseline .\examples\access-baseline.example.json --output .\reports\permissions.json --csv
 python .\report_nsx_rule_usage.py --run .\inventory\selected-run --previous .\inventory\earlier-run --output .\reports\rule-usage.json --csv
 python .\report_automation_requests.py --run .\inventory\selected-run --output .\reports\requests.json --long-running-minutes 60 --csv
+python .\report_lifecycle_compliance.py --run .\inventory\selected-run --output .\reports\lifecycle.json --max-scan-age-hours 24 --csv
+python .\report_management_services.py --run .\inventory\selected-run --baseline .\examples\management-services-baseline.example.json --output .\reports\services.json --csv
+python .\report_metric_history.py --run .\inventory\selected-run --output .\reports\history.json --csv
+python .\report_supervisor_health.py --run .\inventory\selected-run --output .\reports\supervisors.json --max-used-percent 80 --csv
 ```
 
 The installed `vcf-report --report <report_type>` command provides the same reports, with underscore-separated types such as `backup_freshness` or `protection_gaps`. Direct scripts require no package installation or third-party runtime dependencies.
+
+The maintenance reports have separate guides for [lifecycle compliance](lifecycle.md), [vCenter service settings](management_services.md), [historical metrics](metric_history.md), and [Supervisor/namespace evidence](supervisor.md). The optional service baseline must identify exact saved target names and endpoints; adapt the example to match your collection configuration. Historical dates, metric units and returned rollups require explicit interpretation. Native statuses and configured settings do not independently establish operational health.
+
+The separate [live validation tool](live_validation.md) contacts configured appliances and produces numeric version/build evidence, collector outcomes and optional structural fixtures. It is not a saved-run report and is not invoked by any report command.
 
 ## Protection requirements
 

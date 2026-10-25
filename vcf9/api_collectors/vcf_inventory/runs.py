@@ -100,6 +100,8 @@ def identity_for(component, resource, row):
         fields = {"vms": "vm", "hosts": "host", "clusters": "cluster", "datacenters": "datacenter",
                   "datastores": "datastore", "networks": "network"}
         candidates = [fields.get(resource, "id")]
+    elif resource == "metric_history":
+        candidates = ["resource_id", "stat_key", "window_label", "begin_ms", "end_ms"]
     elif resource == "latest_metrics":
         candidates = ["resource_id", "stat_key"]
     elif resource == "relationships":

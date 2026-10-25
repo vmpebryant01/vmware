@@ -52,12 +52,13 @@ def load_config(path):
     seen = set()
     common_fields = {"name", "component", "url", "username_env", "password_env", "resources", "verify_tls", "version"}
     component_fields = {
-        "sddc_manager": {"task_days", "certificate_attention_days", "domain_ids"}, "vcenter": {"filters"},
+        "sddc_manager": {"task_days", "certificate_attention_days", "domain_ids"},
+        "vcenter": {"filters", "lifecycle_cluster_ids", "supervisor_ids", "namespace_ids"},
         "nsx": {"site_id", "enforcement_point_id", "domain_id", "policy_ids", "rule_ids"},
         "vsan": {"cluster_ids", "api_version", "token_env"},
         "vcf_fleet": {"token_env"},
         "hcx": {"auth_source", "token_env"},
-        "vcf_operations": {"auth_source", "token_env", "token_scheme", "filters", "resource_ids", "stat_keys"},
+        "vcf_operations": {"auth_source", "token_env", "token_scheme", "filters", "resource_ids", "stat_keys", "metric_history"},
         "vcf_automation": {"api_family", "token_env", "api_version", "org_id", "deployment_ids"},
         "live_site_recovery": {"auth_source", "token_env", "api_version", "pairing_id", "remote_username_env", "remote_password_env", "srm_ids", "group_ids"},
         "vsphere_replication": {"auth_source", "token_env", "api_version", "pairing_id", "remote_username_env", "remote_password_env", "source_vc_guid"},
@@ -147,8 +148,8 @@ def load_config(path):
         from .operational import validate_target as validate_operational
         try:
             validate_operational(target)
-            from . import assurance, activity, protection_evidence
-            for supplemental in (assurance, activity, protection_evidence):
+            from . import assurance, activity, protection_evidence, lifecycle, management_services, supervisor, metric_history
+            for supplemental in (assurance, activity, protection_evidence, lifecycle, management_services, supervisor, metric_history):
                 supplemental.validate_target(target)
         except ValueError as exc:
             raise ConfigError(f"Target {name}: {exc}") from None

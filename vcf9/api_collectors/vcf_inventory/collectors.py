@@ -6,6 +6,7 @@ import json
 from .http_client import ApiError
 from .products import module_for, modules
 from . import operational, assurance, activity, protection_evidence
+from . import lifecycle, management_services, supervisor, metric_history
 from .vcenter_inventory import VCENTER_LIMITS, collect_vcenter
 
 RESOURCE_PATHS = {
@@ -41,7 +42,8 @@ DEFAULT_RESOURCES["nsx"] = [resource for resource in RESOURCE_PATHS["nsx"]
 for product in modules():
     RESOURCE_PATHS.update(product.RESOURCE_PATHS)
     DEFAULT_RESOURCES.update(product.DEFAULT_RESOURCES)
-SUPPLEMENTAL_MODULES = (operational, assurance, activity, protection_evidence)
+SUPPLEMENTAL_MODULES = (operational, assurance, activity, protection_evidence,
+                        lifecycle, management_services, supervisor, metric_history)
 for supplemental in SUPPLEMENTAL_MODULES:
     for component, paths in supplemental.RESOURCE_PATHS.items():
         RESOURCE_PATHS[component].update(paths)

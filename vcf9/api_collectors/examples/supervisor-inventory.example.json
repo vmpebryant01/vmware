@@ -1,0 +1,15 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {
+      "name": "management-vcenter",
+      "component": "vcenter",
+      "url": "https://vcenter.example.com",
+      "username_env": "VCENTER_USERNAME",
+      "password_env": "VCENTER_PASSWORD",
+      "resources": ["supervisor_summaries", "supervisor_conditions", "namespaces"],
+      "supervisor_ids": ["supervisor-identifier"],
+      "namespace_ids": ["application-namespace"]
+    }
+  ]
+}

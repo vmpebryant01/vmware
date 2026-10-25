@@ -31,8 +31,9 @@ class SharedToolsTests(unittest.TestCase):
         toolkit = Path(__file__).resolve().parents[1]
         with patch("vcf_inventory.http_client.build_opener") as opener:
             for file in [toolkit / "config.example.json", *sorted((toolkit / "examples").glob("*.json"))]:
-                # Identity maps are consumed separately, not target configuration.
-                if "targets" in json.loads(file.read_text(encoding="utf-8-sig")):
+                # Policy and baseline files are consumed separately from collection configuration.
+                content = json.loads(file.read_text(encoding="utf-8-sig"))
+                if "targets" in content and all("component" in target for target in content["targets"]):
                     with self.subTest(file=file.name):
                         load_config(file)
         opener.assert_not_called()

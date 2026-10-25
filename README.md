@@ -12,7 +12,7 @@ The [API inventory collectors](vcf9/api_collectors/README.md) provide separate P
 
 ## Start here
 
-Seven [operational reports](vcf9/api_collectors/docs/reports.md) use completed API collections to report backup freshness, protection gaps, vSAN health and capacity, HCX migration progress, access assignments, NSX rule usage, and Automation request exceptions.
+Eleven [operational reports](vcf9/api_collectors/docs/reports.md) use completed API collections to report backup freshness, protection gaps, vSAN health and capacity, HCX migration progress, access assignments, NSX rule usage, Automation request exceptions, lifecycle compliance, vCenter service configuration, historical metrics, and Supervisor/namespace state. A separate [live validation tool](vcf9/api_collectors/docs/live_validation.md) checks explicitly selected collector contracts within request limits and can produce value-free structural fixtures and observed-version evidence.
 
 | Example | What it does | Safety and verification |
 | --- | --- | --- |
