@@ -168,7 +168,7 @@ Relationship reports use explicit API references, unique management endpoint mat
 
 ## Connections
 
-Inventory uses documented GETs and exact allowlisted read-only query POSTs for vCenter permissions, HCX migrations, and vSAN health/capacity. Query method, route, action, and payload must match their read contracts; create, update, reset, migration, health-task, and recovery actions remain unavailable. Session authentication uses its documented methods. Redirects are refused and ambient proxy configuration is ignored. Requests remain on the configured origin with TLS and hostname verification enabled. Run where managers are directly reachable.
+Inventory uses documented GETs and exact allowlisted read-only query POSTs for vCenter permissions, HCX migrations and local manager version evidence, and vSAN health/capacity. Query method, route, action, and payload must match their read contracts; create, update, reset, migration, health-task, and recovery actions remain unavailable. Session authentication uses its documented methods. Redirects are refused and ambient proxy configuration is ignored. Requests remain on the configured origin with TLS and hostname verification enabled. Run where managers are directly reachable.
 
 Eligible GETs retry transient transport failures or HTTP 429, 502, 503, and 504 within configured limits. Authentication POSTs are not automatically retried. SDDC Manager and vCenter can reauthenticate once after a 401. Other product 401s fail explicitly to preserve their token and paired-session protocols. Supply a fresh supported token or correct authentication and rerun. Responses exceeding 64 MiB fail explicitly.
 
@@ -181,6 +181,8 @@ python collect.py --config config.example.json --validate-config
 
 Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, `vcf-relationships`, `vcf-report`, and `vcf-validate-live`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
 
+Repository CI checks attribution in tracked files and reachable history, and inspects built wheel/source archive metadata. Package jobs test Python 3.10 through 3.15 on Linux and the minimum/newest versions on Windows. They install the built wheel into a fresh environment outside the source checkout and exercise every installed command without contacting appliances. The repository's top-level package validation and authorship guides describe these checks.
+
 ## Public API documentation
 
 - SDDC Manager: [appliance information](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/system/appliance-info/get/), [tokens](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/tokens/post/), [domains](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/domains/get/), [clusters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/clusters/get/), [hosts](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/hosts/get/), [vCenters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/vcenters/get/), [NSX clusters](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/nsxt-clusters/get/), [network pools](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/network-pools/get/).
@@ -189,3 +191,4 @@ Tests simulate API responses without contacting appliances. Optional `python -m 
 - Product-specific methods and release details: [Fleet LCM](docs/fleet.md), [HCX and recovery](docs/hcx_recovery.md), [Operations](docs/operations.md), [Automation](docs/automation.md), [operational resources](docs/operational.md).
 - Additional report APIs and limits: [backup and authorization](docs/assurance.md), [vSAN](docs/vsan.md), [activity](docs/activity.md), [protection evidence and report commands](docs/reports.md).
 - Maintenance APIs and limits: [lifecycle](docs/lifecycle.md), [management services](docs/management_services.md), [historical metrics](docs/metric_history.md), [Supervisor and namespaces](docs/supervisor.md), [live validation](docs/live_validation.md).
+- Product/server build evidence and unknown scopes: [version probes](docs/version_evidence.md).

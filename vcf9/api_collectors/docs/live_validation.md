@@ -23,7 +23,9 @@ The default request budget is 25 calls per target, including authentication and 
 
 ## Build evidence
 
-Numeric release/build fields are obtained through the existing documented probes for SDDC Manager, vCenter, NSX and Operations. A configured `version` label is not evidence that the installed build was tested. Missing version permissions, unrecognized version formats, and components without a verified version probe remain unknown in the matrix. Successful selected reads are retained even when the version probe fails, but the overall result remains partial.
+Numeric release/build fields are obtained through documented probes for SDDC Manager, vCenter, NSX, Operations, Fleet LCM, local HCX managers, Live Site Recovery and vSphere Replication. vSAN targets report the backing vCenter server build with the explicit `vcenter_server_for_vsan` scope; they do not establish the versions of ESX hosts or individual vSAN components. Fleet evidence identifies its LCM system. Matrix columns retain the evidence scope and, where available, a separate server API version. See [version evidence and authentication limits](version_evidence.md).
+
+A configured `version` label is not evidence that the installed build was tested. Automation product builds remain unknown for all three implemented API families; supported or requested API versions are not substituted for a product build. HCX VCF SSO mode also remains unknown because its documented version-query authentication contract has not been verified. Missing permissions and unrecognized version formats remain unknown. Successful selected reads are retained even when the version probe fails, but the overall result remains partial.
 
 Use the matrix as evidence of one account, configured scope and observation time. A passing result does not prove all permissions, all API variants, empty-resource item schemas, unvisited pagination paths or interoperability between connected products. The toolkit has offline tests; no live appliance validation results are distributed with it.
 

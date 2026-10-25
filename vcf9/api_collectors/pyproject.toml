@@ -1,6 +1,6 @@
 # Author: Paul Bryant
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,7 @@ name = "vcf-api-collectors"
 version = "2.3.0"
 description = "Read-only API inventory collectors for VMware Cloud Foundation components"
 readme = "README.md"
+license-files = ["COPYRIGHT.md"]
 requires-python = ">=3.10"
 authors = [{name = "Paul Bryant"}]
 dependencies = []

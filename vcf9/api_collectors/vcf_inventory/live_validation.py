@@ -3,7 +3,6 @@
 import argparse
 import csv
 import io
-import re
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -12,7 +11,8 @@ from pathlib import Path
 from .config import ConfigError, load_config
 from .exports import write_json
 from .http_client import ApiError, HttpClient
-from .preflight import VERSION_PROBES, _failure
+from .preflight import _failure
+from .version_probes import probe_version
 
 
 # Only literal schema names are retained. Unknown object keys can be identifiers,
@@ -74,20 +74,6 @@ def response_shape(value, max_nodes=500, max_depth=8):
         return {"kind": "unrecognized"}
 
     return visit(value, 0)
-
-
-def _version_fields(payload, component):
-    if not isinstance(payload, dict):
-        return {}
-    result = {}
-    for field in VERSION_PROBES[component][1]:
-        value = payload.get(field)
-        # Keep numeric release/build evidence only, not free-text release names.
-        if type(value) is int and 0 <= value <= 2 ** 63 - 1:
-            result[field] = value
-        elif isinstance(value, str) and re.fullmatch(r"[0-9]+(?:[.][0-9]+){0,9}", value):
-            result[field] = value
-    return result
 
 
 def shape_matches(value, fixture):
@@ -193,18 +179,7 @@ def run_live_validation(targets, config, *, max_requests=25, max_pages=3,
             client.authenticate()
             row["authentication"] = {"status": "configured"}
             component = target["component"]
-            if component in VERSION_PROBES:
-                try:
-                    payload = client.request("GET", VERSION_PROBES[component][0])
-                    fields = _version_fields(payload, component)
-                    if fields:
-                        row["version"] = {"status": "reported", "fields": fields}
-                    else:
-                        row["version"] = {"status": "unknown", "reason": "No numeric release/build fields were returned."}
-                except ApiError as exc:
-                    row["version"] = _safe_failure(exc)
-            else:
-                row["version"]["reason"] = "A verified version probe is not implemented for this component."
+            row["version"] = probe_version(client, target, numeric_only=True)
             for resource in target["resources"]:
                 state.update(resource=resource, fixture_count=0, resource_calls=0)
                 observation = {"resource": resource, "status": "not_checked"}
@@ -258,13 +233,14 @@ def matrix_csv(report):
     stream = io.StringIO(newline="")
     writer = csv.writer(stream)
     writer.writerow(("author", "observed_at", "target_alias", "component", "version_status",
-                     "numeric_version_fields", "resource", "contract_status"))
+                     "version_scope", "server_api_version", "numeric_version_fields", "resource", "contract_status"))
     for target in report["targets"]:
         version = target["version"]
         fields = "; ".join(f"{key}={value}" for key, value in sorted(version.get("fields", {}).items()))
         for resource in target["resources"] or [{"resource": "", "status": "not_checked"}]:
             writer.writerow(("Paul Bryant", report["completed_at"], target["target_alias"], target["component"],
-                             version["status"], fields, resource["resource"], resource["status"]))
+                             version["status"], version.get("scope", "unknown"), version.get("server_api_version", ""),
+                             fields, resource["resource"], resource["status"]))
     return stream.getvalue()
 
 

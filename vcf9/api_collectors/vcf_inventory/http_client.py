@@ -56,8 +56,8 @@ class HttpClient:
         if product is not None:
             allowed.update(product.ALLOWED_OPERATIONS)
         product_allowed = product is not None and hasattr(product, "allow_request") and product.allow_request(component, method, path)
-        from . import assurance, activity
-        query_modules = (assurance, activity) + ((product,) if product is not None else ())
+        from . import assurance, activity, version_probes
+        query_modules = (assurance, activity, version_probes) + ((product,) if product is not None else ())
         query_allowed = any(hasattr(module, "allow_query") and module.allow_query(component, method, path, params, body)
                             for module in query_modules)
         if method != "GET" and (component, method, path) not in allowed and not product_allowed and not query_allowed:

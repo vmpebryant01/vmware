@@ -99,13 +99,15 @@ class PreflightTests(unittest.TestCase):
         self.assertEqual(row["status"], "partial")
 
     def test_fleet_components_are_protected_first_page_without_node_discovery(self):
-        value = client([{"components": []}])
+        value = client([{"currentVersion": "9.1.1.0"}, {"components": []}])
         row = self.run_probe(target("vcf_fleet", ["components", "component_nodes"], token_env="TOKEN", version="operator-entry"), value)["targets"][0]
         self.assertEqual(row["authentication"]["status"], "verified")
         self.assertEqual(row["configured_version"], "operator-entry")
-        self.assertEqual(row["version"]["status"], "not_probed")
+        self.assertEqual(row["version"], {"status": "reported", "scope": "fleet_lcm_system",
+                                          "fields": {"currentVersion": "9.1.1.0"}})
         self.assertEqual(row["status"], "partial")
-        self.assertEqual(value.request.call_count, 1)
+        self.assertEqual(value.request.call_count, 2)
+        self.assertEqual(value.request.call_args_list[0].args, ("GET", "/fleet-lcm/v1/system"))
         self.assertEqual(value.request.call_args.args, ("GET", "/fleet-lcm/v1/components"))
         self.assertEqual(value.request.call_args.kwargs["params"], {
             "pageNumber": 1, "pageSize": 1, "includeConsumptionVsp": "true", "includeVcdMigrator": "true"})
@@ -128,7 +130,8 @@ class PreflightTests(unittest.TestCase):
         value = client([{"values": []}])
         configured = target("vcf_automation", ["organizations"], api_family="provider", api_version="9.1.1", token_env="TOKEN")
         row = self.run_probe(configured, value)["targets"][0]
-        self.assertEqual(row["version"]["status"], "not_probed")
+        self.assertEqual(row["version"]["status"], "unknown")
+        self.assertEqual(row["version"]["scope"], "automation_product_build")
         self.assertEqual(value.request.call_args.kwargs["params"], {"page": 1, "pageSize": 1})
         self.assertEqual(value.request.call_count, 1)
 
@@ -140,10 +143,11 @@ class PreflightTests(unittest.TestCase):
         self.assertEqual(value.request.call_count, 2)
 
     def test_missing_pairing_scope_is_not_discovered(self):
-        value = client()
+        value = client([{"version": "9.1.1", "build_number": "1234567"}])
         row = self.run_probe(target("live_site_recovery", ["recovery_plans"], auth_source="session_token"), value)["targets"][0]
         self.assertEqual(row["capabilities"][0]["status"], "not_probed")
-        value.request.assert_not_called()
+        value.request.assert_called_once_with("GET", "/api/rest/srm/v2/server/info")
+        self.assertEqual(row["version"]["scope"], "local_site_recovery_server")
 
     def test_cleanup_error_is_reported_without_response_or_exception_details(self):
         value = client([{"node_version": "9.1.1"}], cleanup_error=ApiError("Sensitive detail", status=403))
@@ -156,7 +160,7 @@ class PreflightTests(unittest.TestCase):
         value = client()
         factory = Mock(return_value=value)
         configured = target("hcx", ["compute_profiles"], auth_source="session_token")
-        value.request.side_effect = [{}]
+        value.request.side_effect = [[{"version": "9.1.1"}], {}]
         report = run_preflight([configured], {"timeout_seconds": 9, "retries": 0}, client_factory=factory)
         factory.assert_called_once_with(configured, timeout=9, retries=0)
         self.assertEqual(report["author"], "Paul Bryant")

@@ -1,12 +1,15 @@
 """Live-validation budgets, fixture boundaries and evidence. Author: Paul Bryant."""
 
+import csv
+import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from vcf_inventory.http_client import ApiError
+from vcf_inventory.http_client import ApiError, HttpClient
 from vcf_inventory.live_validation import main, matrix_csv, response_shape, run_live_validation, shape_matches
 
 
@@ -45,6 +48,21 @@ class FakeClient:
     def close(self):
         if self.session:
             self.request("DELETE", "/api/session")
+
+
+class OfflineResponse:
+    def __init__(self, document):
+        self.document = document
+        self.headers = {}
+
+    def read(self, limit):
+        return json.dumps(self.document).encode("utf-8")[:limit]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
 
 
 class LiveValidationTests(unittest.TestCase):
@@ -128,6 +146,92 @@ class LiveValidationTests(unittest.TestCase):
         self.assertEqual(report["status"], "success")
         self.assertEqual(len(report["fixtures"]), 1)
         self.assertNotIn("sensitive-authentication-token", json.dumps(report))
+
+    def test_hcx_version_read_uses_transport_allowlist_and_is_not_an_inventory_fixture(self):
+        configured = target("hcx", ["appliances"])
+        configured.update(auth_source="session_token", token_env="TEST_HCX_TOKEN")
+        with patch.dict(os.environ, {"TEST_HCX_TOKEN": "private-hcx-session"}), \
+                patch("vcf_inventory.http_client.build_opener") as opener:
+            opener.return_value.open.side_effect = [
+                OfflineResponse([{"systemName": "private-hcx-name", "version": "9.1.1.0.1234567"}]),
+                OfflineResponse({"items": [{"applianceId": "private-appliance-id"}]}),
+            ]
+            report = run_live_validation([configured], {}, capture_fixtures=True)
+            requests = [call.args[0] for call in opener.return_value.open.call_args_list]
+        row = report["targets"][0]
+        self.assertEqual(report["status"], "success")
+        self.assertEqual(row["version"]["scope"], "local_hcx_manager")
+        self.assertEqual(row["request_count"], 2)
+        self.assertEqual(requests[0].method, "POST")
+        self.assertEqual(requests[0].full_url, configured["url"] + "/hybridity/api/hcspAppliances")
+        self.assertEqual(json.loads(requests[0].data), {"action": "query", "filter": {"local": "true"}})
+        self.assertEqual(requests[1].method, "GET")
+        self.assertEqual(len(report["fixtures"]), 1)
+        self.assertEqual(report["fixtures"][0]["resource"], "appliances")
+        self.assertEqual(report["fixtures"][0]["shape"]["kind"], "object")
+        for private in ("private-hcx-session", "private-hcx-name", "private-appliance-id", "private.example.test"):
+            self.assertNotIn(private, json.dumps(report))
+
+    def test_hcx_version_transport_refuses_widened_queries_before_connection(self):
+        configured = target("hcx", ["appliances"])
+        good_body = {"action": "query", "filter": {"local": "true"}}
+        forbidden = (
+            ("POST", "/hybridity/api/hcspAppliances", None, {"action": "query", "filter": {"local": "true", "remote": "true"}}),
+            ("POST", "/hybridity/api/hcspAppliances", None, {"action": "query", "filter": {"local": True}}),
+            ("POST", "/hybridity/api/hcspAppliances", {"action": "query"}, good_body),
+            ("POST", "/hybridity/api/upgrade", {"action": "getNotifications"}, {}),
+            ("POST", "/hybridity/api/upgrade", {"action": "start"}, {}),
+            ("PUT", "/hybridity/api/hcspAppliances", None, good_body),
+        )
+        with patch("vcf_inventory.http_client.build_opener") as opener:
+            value = HttpClient(configured, retries=0)
+            for method, path, params, body in forbidden:
+                with self.subTest(method=method, path=path, params=params, body=body), self.assertRaises(ApiError):
+                    value.request(method, path, params=params, body=body)
+            opener.return_value.open.assert_not_called()
+
+    def test_vsan_matrix_identifies_vcenter_build_separately_from_configured_schema(self):
+        configured = target("vsan", ["health_summary"])
+        configured.pop("username_env")
+        configured.pop("password_env")
+        configured.update(token_env="TEST_VSAN_TOKEN", api_version="9.0.0.0", cluster_ids=["domain-c123"])
+        content = {"about": {"apiType": "VirtualCenter", "apiVersion": "9.1.1.0", "version": "9.1.1.0", "build": "1234567"},
+                   "sessionManager": {"type": "SessionManager", "value": "SessionManager"}}
+        with patch.dict(os.environ, {"TEST_VSAN_TOKEN": "private-vsan-session"}), \
+                patch("vcf_inventory.http_client.build_opener") as opener:
+            opener.return_value.open.side_effect = [OfflineResponse(content), OfflineResponse(content),
+                                                    OfflineResponse({"overallHealth": "green", "overallHealthDescription": "Healthy"})]
+            report = run_live_validation([configured], {})
+            requests = [call.args[0] for call in opener.return_value.open.call_args_list]
+        self.assertEqual(report["status"], "success")
+        self.assertEqual(report["targets"][0]["request_count"], 3)
+        self.assertEqual(requests[1].full_url, configured["url"] + "/sdk/vim25/9.0.0.0/ServiceInstance/ServiceInstance/content")
+        matrix, = csv.DictReader(io.StringIO(matrix_csv(report)))
+        self.assertEqual(matrix["version_scope"], "vcenter_server_for_vsan")
+        self.assertEqual(matrix["server_api_version"], "9.1.1.0")
+        self.assertEqual(matrix["numeric_version_fields"], "build=1234567; version=9.1.1.0")
+        self.assertNotIn("9.0.0.0", matrix["numeric_version_fields"])
+        self.assertNotIn("private-vsan-session", json.dumps(report))
+
+    def test_fleet_matrix_uses_system_current_version_and_validates_inventory_separately(self):
+        configured = target("vcf_fleet", ["components"])
+        configured.update(token_env="TEST_FLEET_TOKEN")
+        with patch.dict(os.environ, {"TEST_FLEET_TOKEN": "private-fleet-token"}), \
+                patch("vcf_inventory.http_client.build_opener") as opener:
+            opener.return_value.open.side_effect = [
+                OfflineResponse({"currentVersion": "9.1.1.0", "targetVersion": "9.2.0.0"}),
+                OfflineResponse({"components": [], "pageMetadata": {"pageNumber": 1, "totalPages": 1, "totalElements": 0}}),
+            ]
+            report = run_live_validation([configured], {}, capture_fixtures=True)
+        self.assertEqual(report["status"], "success")
+        self.assertEqual(report["targets"][0]["resources"][0]["status"], "contract_validated")
+        self.assertEqual(len(report["fixtures"]), 1)
+        matrix, = csv.DictReader(io.StringIO(matrix_csv(report)))
+        self.assertEqual(matrix["version_scope"], "fleet_lcm_system")
+        self.assertEqual(matrix["numeric_version_fields"], "currentVersion=9.1.1.0")
+        self.assertEqual(matrix["server_api_version"], "")
+        self.assertNotIn("9.2.0.0", matrix_csv(report))
+        self.assertNotIn("private-fleet-token", json.dumps(report))
 
     def test_missing_explicit_scope_or_bad_limits_fail_before_connection(self):
         for options in ({"targets": [target(resources=[])]}, {"max_requests": 1}, {"max_pages": 0}):

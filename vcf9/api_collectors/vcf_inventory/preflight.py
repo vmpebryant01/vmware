@@ -4,14 +4,9 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from .http_client import ApiError, HttpClient
+from .version_probes import VERSION_PROBES, probe_version
 
 
-VERSION_PROBES = {
-    "sddc_manager": ("/v1/system/appliance-info", ("version",)),
-    "vcenter": ("/api/appliance/system/version", ("version", "build")),
-    "nsx": ("/api/v1/node", ("node_version", "product_version")),
-    "vcf_operations": ("/suite-api/api/versions/current", ("major", "minor", "minorMinor", "patch", "buildNumber", "releaseName")),
-}
 _ERRORS = {"access_denied", "endpoint_not_found", "tls_error", "network_error", "query_failure"}
 
 
@@ -160,25 +155,11 @@ def run_preflight(targets, config, client_factory=HttpClient):
             except ApiError as exc:
                 result["authentication"] = _failure(exc)
                 _transport(result, result["authentication"])
-            if client is not None and component in VERSION_PROBES:
-                path, approved = VERSION_PROBES[component]
-                try:
-                    payload = client.request("GET", path)
-                    fields = {}
-                    for key in approved:
-                        value = payload.get(key) if isinstance(payload, dict) else None
-                        numeric = component == "vcf_operations" and key != "releaseName"
-                        if (numeric and type(value) is int and value >= 0) or (not numeric and isinstance(value, str) and value):
-                            fields[key] = value
-                    if not fields:
-                        raise ApiError("Version response did not contain verified version fields.")
-                    result["version"] = {"status": "reported", "fields": fields}
-                    _transport(result, result["version"])
-                except ApiError as exc:
-                    result["version"] = _failure(exc)
-                    _transport(result, result["version"])
+            if client is not None:
+                result["version"] = probe_version(client, target)
+                _transport(result, result["version"])
             else:
-                result["version"]["reason"] = "No verified version endpoint is implemented for this component."
+                result["version"]["reason"] = "Client setup did not complete."
             paths = dict(RESOURCE_PATHS.get(component, {}))
             paths.update(OPERATIONAL_PATHS.get(component, {}))
             for resource in resources_for(target):
