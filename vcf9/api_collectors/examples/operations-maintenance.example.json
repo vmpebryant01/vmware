@@ -1,0 +1,50 @@
+{
+  "author": "Paul Bryant",
+  "timeout_seconds": 30,
+  "retries": 2,
+  "page_size": 100,
+  "max_pages": 100,
+  "targets": [
+    {
+      "name": "management-vcenter",
+      "component": "vcenter",
+      "url": "https://vcenter.example.com",
+      "username_env": "VCENTER_USERNAME",
+      "password_env": "VCENTER_PASSWORD",
+      "verify_tls": true,
+      "resources": [
+        "lifecycle_desired_image",
+        "lifecycle_compliance",
+        "appliance_dns",
+        "appliance_ntp",
+        "appliance_timesync",
+        "appliance_syslog",
+        "supervisor_summaries",
+        "supervisor_conditions",
+        "namespaces"
+      ],
+      "lifecycle_cluster_ids": ["domain-c101"],
+      "supervisor_ids": ["replace-with-supervisor-id"],
+      "namespace_ids": ["replace-with-namespace-id"]
+    },
+    {
+      "name": "operations-history",
+      "component": "vcf_operations",
+      "url": "https://operations.example.com",
+      "token_env": "VCF_OPERATIONS_TOKEN",
+      "verify_tls": true,
+      "resources": ["metric_history"],
+      "resource_ids": ["replace-with-operations-resource-id"],
+      "stat_keys": ["cpu|usage_average"],
+      "metric_history": {
+        "windows": [
+          {"label": "earlier", "begin": "2026-10-23T00:00:00Z", "end": "2026-10-24T00:00:00Z"},
+          {"label": "later", "begin": "2026-10-24T00:00:00Z", "end": "2026-10-25T00:00:00Z"}
+        ],
+        "rollup_type": "AVG",
+        "interval_type": "MINUTES",
+        "interval_quantifier": 5
+      }
+    }
+  ]
+}

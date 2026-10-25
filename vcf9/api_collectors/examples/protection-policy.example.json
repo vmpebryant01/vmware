@@ -1,0 +1,22 @@
+{
+  "author": "Paul Bryant",
+  "requirements": [
+    {
+      "vcenter_target": "vcenter-reports",
+      "vm_id": "vm-42",
+      "max_sync_age_hours": 24,
+      "replication": {
+        "target": "replication-reports",
+        "pairing_id": "replace-pairing-id",
+        "source_vc_id": "replace-source-vcenter-id",
+        "vm_id": "replace-native-replication-vm-id"
+      },
+      "site_recovery": {
+        "target": "site-recovery-reports",
+        "pairing_id": "replace-pairing-id",
+        "group_id": "replace-protection-group-id",
+        "vm_id": "replace-native-protected-vm-id"
+      }
+    }
+  ]
+}

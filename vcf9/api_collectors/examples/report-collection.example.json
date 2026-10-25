@@ -1,0 +1,40 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {
+      "name": "vcenter-reports", "component": "vcenter", "url": "https://vcenter.example.com",
+      "username_env": "VCENTER_USERNAME", "password_env": "VCENTER_PASSWORD",
+      "resources": ["vms", "backup_jobs", "backup_schedules", "authorization_roles", "authorization_permissions"]
+    },
+    {
+      "name": "nsx-reports", "component": "nsx", "url": "https://nsx-manager.example.com",
+      "username_env": "NSX_USERNAME", "password_env": "NSX_PASSWORD",
+      "resources": ["backup_history", "rule_statistics"], "policy_ids": ["replace-policy-id"],
+      "site_id": "default", "enforcement_point_id": "default", "domain_id": "default"
+    },
+    {
+      "name": "vsan-reports", "component": "vsan", "url": "https://vcenter.example.com",
+      "username_env": "VCENTER_USERNAME", "password_env": "VCENTER_PASSWORD",
+      "api_version": "9.0.0.0", "cluster_ids": ["domain-c123"], "resources": ["health_summary", "space_usage"]
+    },
+    {
+      "name": "hcx-reports", "component": "hcx", "url": "https://hcx-manager.example.com",
+      "username_env": "HCX_USERNAME", "password_env": "HCX_PASSWORD", "resources": ["migrations"]
+    },
+    {
+      "name": "automation-reports", "component": "vcf_automation", "url": "https://automation.example.com",
+      "token_env": "VCFA_ALL_APPS_ACCESS_TOKEN", "api_family": "all_apps",
+      "resources": ["deployment_requests"], "deployment_ids": ["replace-deployment-id"]
+    },
+    {
+      "name": "site-recovery-reports", "component": "live_site_recovery", "url": "https://site-recovery.example.com",
+      "auth_source": "session_token", "token_env": "RECOVERY_SESSION", "pairing_id": "replace-pairing-id",
+      "resources": ["group_vms"], "group_ids": ["replace-protection-group-id"]
+    },
+    {
+      "name": "replication-reports", "component": "vsphere_replication", "url": "https://replication.example.com",
+      "auth_source": "session_token", "token_env": "REPLICATION_SESSION", "pairing_id": "replace-pairing-id",
+      "resources": ["replications"], "source_vc_guid": "replace-source-vcenter-id"
+    }
+  ]
+}

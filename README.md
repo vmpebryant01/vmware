@@ -1,12 +1,20 @@
 # VMware Automation Scripts
 
+Author: Paul Bryant
+
 This repository contains vSphere, NSX, and Site Recovery Manager (SRM) scripts. It is a collection of examples with different levels of implementation and verification. Review each script and test it against a nonproduction system before using it in operations.
 
 The historical examples in `vsphere`, `nsx`, and `srm` target the vSphere 8.x, NSX 4.2.x, and VMware.PowerCLI 13.x generation. The original commits were posted July 23, 2025. See [historical version scope](docs/compatibility.md) for the release-date evidence, the separate Live Site Recovery version line, and compatibility limits. Their behavior on VCF 9.x has not been validated.
 
 New read-only examples for the VCF 9.1.x generation are in the separate [VCF 9.1.x reports](vcf9/README.md) collection. Their API paths and PowerCLI commands are documented there; live behavior remains unverified.
 
+The [API inventory collectors](vcf9/api_collectors/README.md) provide separate Python commands for VCF Fleet Management, SDDC Manager, vCenter, HCX, NSX, VCF Operations, VCF Automation, and Protection and Recovery. They export JSON and optional CSV using Python's standard library, with API preflight, large vCenter inventory partitioning, run comparisons, relationships, metrics, and optional operational reports. The collection guide links the documented API contracts and product-specific limits. Offline tests cover collection behavior; live compatibility remains unverified for the installed product builds.
+
 ## Start here
+
+Eleven [operational reports](vcf9/api_collectors/docs/reports.md) use completed API collections to report backup freshness, protection gaps, vSAN health and capacity, HCX migration progress, access assignments, NSX rule usage, Automation request exceptions, lifecycle compliance, vCenter service configuration, historical metrics, and Supervisor/namespace state. A separate [live validation tool](vcf9/api_collectors/docs/live_validation.md) checks explicitly selected collector contracts within request limits and can produce value-free structural fixtures and observed-version evidence.
+
+[Authorship checks](docs/attribution.md) inspect tracked files, reachable Git history, and built distribution metadata. [Package validation](docs/package_validation.md) tests the standalone toolkit across Python versions and verifies its installed commands in isolated environments. The [version evidence guide](vcf9/api_collectors/docs/version_evidence.md) distinguishes product builds, backing-server builds, API versions and scopes that remain unknown. Automated tests use offline data; live appliance compatibility remains unverified.
 
 | Example | What it does | Safety and verification |
 | --- | --- | --- |
@@ -18,7 +26,7 @@ These tests do not establish live compatibility. See the [script status guide](d
 
 ## Setup
 
-1. Install Python 3.11 or later and run `python -m pip install -r requirements.txt` for Python scripts.
+1. Install Python 3.11 or later. The [API inventory collectors](vcf9/api_collectors/README.md) require no third-party packages. For other Python scripts that need the repository dependencies, run `python -m pip install -r requirements.txt`.
 2. Install VMware.PowerCLI 13.3 for the historical PowerShell scripts and check the module version before running them. The new VCF 9.1.x reports have [separate setup instructions](vcf9/README.md).
 3. Copy the relevant `vsphere/.env.example`, `nsx/.env.example`, or `srm/.env.example` to `.env` in that directory. Supply credentials through your normal secret management process. Never commit `.env` files.
 4. Trust the issuing CA for vCenter, NSX, or SRM. For Python scripts that support a custom CA, set the corresponding `VCENTER_CA_BUNDLE` or `NSXT_CA_BUNDLE` environment variable.

@@ -1,0 +1,25 @@
+{
+  "author": "Paul Bryant",
+  "schema_version": "1.0",
+  "targets": [
+    {
+      "target": "management-vcenter",
+      "endpoint": "https://vcenter.example.com",
+      "dns": {
+        "mode": "is_static",
+        "servers": ["192.0.2.53", "192.0.2.54"]
+      },
+      "ntp": {
+        "servers": ["time1.example.com", "time2.example.com"]
+      },
+      "timesync": {
+        "mode": "NTP"
+      },
+      "syslog": {
+        "servers": [
+          {"hostname": "logs.example.com", "port": 514, "protocol": "UDP"}
+        ]
+      }
+    }
+  ]
+}

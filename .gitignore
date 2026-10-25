@@ -6,3 +6,10 @@
 __pycache__/
 *.py[cod]
 .venv/
+
+# Generated API inventories and local collector configuration.
+/inventory/
+/reports/
+vcf9/api_collectors/config.json
+vcf9/api_collectors/config.*.json
+!vcf9/api_collectors/config.example.json

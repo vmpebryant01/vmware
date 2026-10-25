@@ -6,6 +6,22 @@ All files below passed syntax parsing or compilation in the repository checks. N
 
 See [historical version scope](compatibility.md) for the intended product generation and [representative workflows](workflows.md) for selected examples.
 
+## API inventory collectors
+
+The [collection guide](../vcf9/api_collectors/README.md) and its product notes link the public API contracts and collection limits. These Python entry scripts share local tests for documented response handling and exports. Live API behavior and compatibility with the installed component builds remain unverified.
+
+| Entry script | Scope and verification |
+| --- | --- |
+| [`collect.py`](../vcf9/api_collectors/collect.py) | All configured target types; shared collection behavior tested offline |
+| [`collect_vcf.py`](../vcf9/api_collectors/collect_vcf.py) | SDDC Manager and vCenter inventory; request, pagination, and failure handling tested offline |
+| [`collect_hcx.py`](../vcf9/api_collectors/collect_hcx.py) | HCX inventory; product response handling tested offline |
+| [`collect_nsx.py`](../vcf9/api_collectors/collect_nsx.py) | NSX inventory; cursor pagination and response handling tested offline |
+| [`collect_vcf_operations.py`](../vcf9/api_collectors/collect_vcf_operations.py) | VCF Operations inventory; token handling and paged collections tested offline |
+| [`collect_vcf_automation.py`](../vcf9/api_collectors/collect_vcf_automation.py) | VCF Automation inventory; product response handling tested offline |
+| [`collect_vcf_protection_recovery.py`](../vcf9/api_collectors/collect_vcf_protection_recovery.py) | Protection and Recovery inventory; product response handling tested offline |
+
+## Historical examples
+
 | Script | Evidence and current limit |
 | --- | --- |
 | [`nsx/python_complex/dependency_mapping/nsxt_vcenter_cmdb_depmap_enriched.py`](../nsx/python_complex/dependency_mapping/nsxt_vcenter_cmdb_depmap_enriched.py) | Static check only; live behavior unverified |

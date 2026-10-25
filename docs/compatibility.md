@@ -13,6 +13,12 @@ The original repository commits were posted on July 23, 2025. VMware Cloud Found
 
 These are historical reference versions, not a record of the products used when each script was written. The repository does not contain a deployment manifest or live test results that establish an exact supported patch level. Validate each script against the installed product and module builds in a nonproduction environment. VCF 9.x, vSphere 9.x, NSX 9.x, and VCF.PowerCLI 9.x have not been validated here.
 
+## API inventory collectors
+
+The separate [API inventory collection](../vcf9/api_collectors/README.md) uses documented product APIs for VCF management, HCX, NSX, VCF Operations, VCF Automation, and Protection and Recovery. Its guide and product notes link the public API references and describe authentication, inventory scope, and pagination limits. It requires Python 3.11 or later in this repository and uses only the standard library.
+
+Offline tests exercise request handling, authentication, pagination, failure reporting, and exports. They do not establish live compatibility with a particular VCF 9.x release or a combination of component builds. Confirm endpoint availability, permissions, and returned fields against the installed products before operational use. The historical examples retain the version scope above.
+
 ## Check your environment
 
 For PowerShell, inspect the installed module and the connected vCenter version before running a script:

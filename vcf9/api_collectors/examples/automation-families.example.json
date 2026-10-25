@@ -1,0 +1,8 @@
+{
+  "author": "Paul Bryant",
+  "targets": [
+    {"name": "automation-all-apps", "component": "vcf_automation", "url": "https://automation.example.com", "api_family": "all_apps", "token_env": "VCFA_ALL_APPS_ACCESS_TOKEN", "verify_tls": true},
+    {"name": "automation-vm-apps", "component": "vcf_automation", "url": "https://automation.example.com", "api_family": "vm_apps", "token_env": "VCFA_VM_APPS_ACCESS_TOKEN", "verify_tls": true},
+    {"name": "automation-provider", "component": "vcf_automation", "url": "https://automation.example.com", "api_family": "provider", "api_version": "9.1.1", "token_env": "VCFA_PROVIDER_ACCESS_TOKEN", "verify_tls": true}
+  ]
+}
