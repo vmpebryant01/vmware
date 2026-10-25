@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vcf-api-collectors"
-version = "2.1.0"
+version = "2.2.0"
 description = "Read-only API inventory collectors for VMware Cloud Foundation components"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,7 @@ classifiers = [
 vcf-collect = "vcf_inventory.cli:main"
 vcf-compare = "vcf_inventory.compare:main"
 vcf-relationships = "vcf_inventory.relationships:main"
+vcf-report = "vcf_inventory.reporting:main"
 
 [tool.setuptools.packages.find]
 include = ["vcf_inventory*"]

@@ -45,6 +45,7 @@ def validate_target(target):
     allowed_resources = set(FAMILY_RESOURCES[family])
     if family in ("all_apps", "vm_apps"):
         allowed_resources.add("catalog_items")
+        allowed_resources.add("deployment_requests")
     if resources is not None and (
         not isinstance(resources, list) or not resources
         or any(not isinstance(resource, str) or resource not in allowed_resources for resource in resources)

@@ -217,6 +217,10 @@ def collect_resource(client, resource, page_size=100, max_pages=1000):
     pairings = _pairings(client, page_size, max_pages)
     if resource == "pairings":
         return pairings
+    if not isinstance(getattr(client, "collection_metadata", None), dict):
+        client.collection_metadata = {}
+    details = {"coverage": "incomplete", "queried_pairing_ids": []}
+    client.collection_metadata[resource] = details
     result = []
     for item in pairings:
         pairing = item.get("pairing_id")
@@ -236,6 +240,8 @@ def collect_resource(client, resource, page_size=100, max_pages=1000):
             if "pairing_id" in row and row["pairing_id"] != pairing:
                 raise ApiError("Recovery record unexpectedly refers to a different pairing.")
             result.append(dict(row, pairing_id=pairing))
+        details["queried_pairing_ids"].append(pairing)
+    details.update(coverage="complete", record_count=len(result))
     return result
 
 

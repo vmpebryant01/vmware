@@ -18,4 +18,6 @@ Only `_links` and `links` are ignored by default. Add repeated `--ignore-field` 
 
 Failed tasks use the [SDDC Manager completion-time filter](https://developer.broadcom.com/xapis/sddc-manager-api/latest/v1/tasks/get/). The rolling window advances between collections. Missing tasks appear under `no_longer_observed`, never `removed`; the per-row cutoff timestamp does not create a change by itself. Different `task_days` values prevent comparison.
 
+Backup history, migration history, and deployment requests also use `no_longer_observed` for missing historical records because the service may expire retained observations. For recovery inventory and NSX rule statistics, resolved pairing, group, and rule scopes must agree before comparison. These scopes are retained for empty successful collections, so a changed discovery result does not imply removed infrastructure.
+
 JSON includes full before/after records for changes. Optional CSV lists identities and change types; the companion `_changes.json` contains the same index. These files carry the sensitivity of the source inventory. Exit code 0 means every selected resource was comparable, 2 means at least one resource was skipped, and 1 means a run or output could not be read or written. A report with zero changes does not establish platform health or configuration support.

@@ -3,6 +3,7 @@
 from importlib import import_module
 
 PRODUCT_MODULES = {
+    "vsan": "vsan",
     "vcf_fleet": "fleet",
     "hcx": "hcx",
     "vcf_operations": "operations",

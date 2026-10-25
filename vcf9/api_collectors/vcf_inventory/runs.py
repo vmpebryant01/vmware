@@ -94,6 +94,8 @@ def identity_for(component, resource, row):
     """Return documented identifiers, never a display name or content hash fallback."""
     if resource == "appliance_info":
         return ("singleton",)
+    if component == "vsan":
+        return (row["cluster_id"],) if isinstance(row.get("cluster_id"), str) and row["cluster_id"] else None
     if component == "vcenter":
         fields = {"vms": "vm", "hosts": "host", "clusters": "cluster", "datacenters": "datacenter",
                   "datastores": "datastore", "networks": "network"}
@@ -102,6 +104,12 @@ def identity_for(component, resource, row):
         candidates = ["resource_id", "stat_key"]
     elif resource == "relationships":
         candidates = ["resource_id", "relationship_type", "related_resource_id"]
+    elif resource == "rule_statistics":
+        required = [row.get(field) for field in ("domain_id", "policy_id", "rule_id", "enforcement_point")]
+        context = [row.get(field) for field in ("container_cluster_path", "internal_rule_id", "lr_path", "segment_path", "rule")]
+        if any(not isinstance(value, str) or not value for value in required) or any(value is not None and not isinstance(value, str) for value in context):
+            return None
+        return tuple(required) + (json.dumps(context, ensure_ascii=True, separators=(",", ":")),)
     elif resource == "certificates":
         candidates = ["domain_id", "resourceType", "resourceName", "issuedTo"]
     elif resource == "component_statuses":
@@ -119,7 +127,7 @@ def identity_for(component, resource, row):
         return None
     # Local IDs from fan-out calls are meaningful only within their parent scope.
     parents = [] if resource == "certificates" else [row[field] for field in
-        ("pairing_id", "srm_id", "domain_id", "policy_id", "component_id") if field in row]
+        ("pairing_id", "srm_id", "domain_id", "policy_id", "component_id", "group_id", "deployment_id") if field in row]
     if any(type(value) not in (str, int) or value == "" for value in parents):
         return None
     return tuple(str(value) for value in parents + values)

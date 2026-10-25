@@ -46,7 +46,7 @@ class HttpClient:
         self.opener = build_opener(ProxyHandler({}), HTTPSHandler(context=context), NoRedirect())
 
     def request(self, method, path, params=None, body=None, headers=None, include_headers=False):
-        """Inventory uses GET. Only the component's authentication methods may mutate sessions."""
+        """Allow inventory GETs, exact read-query POSTs, and documented session calls."""
         component = self.target["component"]
         allowed = {("sddc_manager", "POST", "/v1/tokens"),
                    ("vcenter", "POST", "/api/session"),
@@ -56,8 +56,12 @@ class HttpClient:
         if product is not None:
             allowed.update(product.ALLOWED_OPERATIONS)
         product_allowed = product is not None and hasattr(product, "allow_request") and product.allow_request(component, method, path)
-        if method != "GET" and (component, method, path) not in allowed and not product_allowed:
-            raise ApiError("Only inventory GETs and documented authentication calls are allowed.")
+        from . import assurance, activity
+        query_modules = (assurance, activity) + ((product,) if product is not None else ())
+        query_allowed = any(hasattr(module, "allow_query") and module.allow_query(component, method, path, params, body)
+                            for module in query_modules)
+        if method != "GET" and (component, method, path) not in allowed and not product_allowed and not query_allowed:
+            raise ApiError("Only inventory reads and documented authentication calls are allowed.")
         if (not path.startswith("/") or path.startswith("//") or "\\" in path
                 or "?" in path or "#" in path or any(c.isspace() for c in path)):
             raise ApiError("An API path must be relative to the configured HTTPS origin.")

@@ -23,6 +23,10 @@ The VCF script selects SDDC Manager and vCenter targets. Protection and Recovery
 
 Optional resources add SDDC certificate metadata and failed tasks, NSX firewall rules, Automation catalog availability, Operations collector state, and Live Site Recovery inventory mappings through the shared connection and export layer. Select these explicitly using [the operational example](examples/operational.example.json) and [scope guide](docs/operational.md).
 
+Seven [saved-run reports](docs/reports.md) add backup freshness, required VM protection, vSAN health and capacity, HCX migrations, vCenter access assignments, NSX rule usage, and Automation request exceptions. Collect their optional resources with [the report collection example](examples/report-collection.example.json), then run the individual `report_*.py` commands offline. The guide includes protection-policy and access-baseline examples.
+
+vSAN uses `component: vsan` through `collect.py`, explicit `cluster_ids`, and a dedicated verified JSON API session. It reads cached health and physical capacity with documented query operations. See [the vSAN guide](docs/vsan.md). These resources are not selected by the default SDDC Manager/vCenter script.
+
 ## Setup
 
 Use Python 3.11 or newer inside the parent repository. The standalone package accepts Python 3.10 or newer. No third-party runtime packages are required. Run these commands from this directory, `vcf9/api_collectors` in the repository:
@@ -71,6 +75,7 @@ Use raw tokens without an authorization scheme prefix. Secrets are temporarily a
 | Component | Authentication |
 | --- | --- |
 | VCF Fleet | Existing bearer JWT in `token_env`, sent to the Fleet LCM API |
+| vSAN | JSON API session created from credentials, or an existing session in `token_env`; explicit `cluster_ids` and a supported schema `api_version` |
 | SDDC Manager | `username_env` and `password_env`; token creation through `/v1/tokens` |
 | vCenter | `username_env` and `password_env`; API session creation and cleanup |
 | NSX | `username_env` and `password_env`; Basic authentication over verified HTTPS |
@@ -111,6 +116,7 @@ Each target requires a unique `name`, a `component`, and an HTTPS origin `url`. 
 - Operations metrics and relationships: explicit `resource_ids`, plus `stat_keys` for `latest_metrics`. [The metrics guide](docs/operations.md) describes timestamps, values, units, and unavailable samples.
 - Automation: `api_family` is required. Provider targets also require `api_version`; optional `org_id` sets organization context.
 - Recovery: `auth_source` is `credentials` or `session_token`; only API `v2` is implemented. Paired credential mode requires `pairing_id`, `remote_username_env`, and `remote_password_env`. Replication optionally accepts `source_vc_guid`.
+- Additional report resources: Live Site Recovery `group_ids`, NSX optional per-policy `rule_ids`, and Automation `deployment_ids` constrain the new queries. See [report scopes](docs/reports.md), [assurance resources](docs/assurance.md), and [activity resources](docs/activity.md).
 
 ## Output and completeness
 
@@ -147,7 +153,7 @@ Relationship reports use explicit API references, unique management endpoint mat
 
 ## Connections
 
-Inventory uses documented GETs. Only allowed authentication calls can use other methods. Redirects are refused and ambient proxy configuration is ignored. Requests remain on the configured origin with TLS and hostname verification enabled. Run where managers are directly reachable.
+Inventory uses documented GETs and exact allowlisted read-only query POSTs for vCenter permissions, HCX migrations, and vSAN health/capacity. Query method, route, action, and payload must match their read contracts; create, update, reset, migration, health-task, and recovery actions remain unavailable. Session authentication uses its documented methods. Redirects are refused and ambient proxy configuration is ignored. Requests remain on the configured origin with TLS and hostname verification enabled. Run where managers are directly reachable.
 
 Eligible GETs retry transient transport failures or HTTP 429, 502, 503, and 504 within configured limits. Authentication POSTs are not automatically retried. SDDC Manager and vCenter can reauthenticate once after a 401. Other product 401s fail explicitly to preserve their token and paired-session protocols. Supply a fresh supported token or correct authentication and rerun. Responses exceeding 64 MiB fail explicitly.
 
@@ -158,7 +164,7 @@ python -m unittest discover -s tests -v
 python collect.py --config config.example.json --validate-config
 ```
 
-Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, and `vcf-relationships`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
+Tests simulate API responses without contacting appliances. Optional `python -m pip install .` registers `vcf-collect`, `vcf-compare`, `vcf-relationships`, and `vcf-report`; direct scripts need no installation. The parent repository's copyright and contribution terms apply.
 
 ## Public API documentation
 
@@ -166,3 +172,4 @@ Tests simulate API responses without contacting appliances. Optional `python -m 
 - vCenter: the list APIs above, [session creation](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/session/post/), and [session cleanup](https://developer.broadcom.com/xapis/vsphere-automation-api/latest/api/session/delete/).
 - NSX: [9.0 API guide](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/9.0.0/), [segments](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListAllInfraSegments.html), [Tier-0](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier0s.html), [Tier-1](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTier1.html), [host transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListHostTransportNodes.html), [edge transport nodes](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListPolicyEdgeTransportNode.html), [transport zones](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListTransportZonesForEnforcementPoint.html), [groups](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListGroupForDomain.html), [security policies](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListSecurityPoliciesForDomain.html), [IP pools](https://developer.broadcom.com/xapis/nsx-t-data-center-rest-api/latest/method_ListIpAddressPools.html).
 - Product-specific methods and release details: [Fleet LCM](docs/fleet.md), [HCX and recovery](docs/hcx_recovery.md), [Operations](docs/operations.md), [Automation](docs/automation.md), [operational resources](docs/operational.md).
+- Additional report APIs and limits: [backup and authorization](docs/assurance.md), [vSAN](docs/vsan.md), [activity](docs/activity.md), [protection evidence and report commands](docs/reports.md).

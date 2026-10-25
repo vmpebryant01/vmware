@@ -168,6 +168,27 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(json.loads(output.read_text())["author"], "Paul Bryant")
         self.assertTrue((self.root / "report_changes.csv").is_file())
 
+    def test_backup_history_absence_is_not_an_infrastructure_removal(self):
+        before = self.run_file("before", [{"id": "backup-1"}], "backup_jobs", "vcenter")
+        after = self.run_file("after", [], "backup_jobs", "vcenter")
+        result = compare_runs(before, after)["resources"][0]
+        self.assertNotIn("removed", result)
+        self.assertEqual(len(result["no_longer_observed"]), 1)
+
+    def test_changed_resolved_recovery_scope_does_not_report_removals(self):
+        before = self.run_file("before", [{"id": "vm", "pairing_id": "p", "group_id": "g"}], "group_vms", "live_site_recovery",
+                               collection={"coverage": "complete", "queried_pairing_ids": ["p"], "queried_group_ids": ["g"]})
+        after = self.run_file("after", [], "group_vms", "live_site_recovery",
+                              collection={"coverage": "complete", "queried_pairing_ids": ["p"], "queried_group_ids": ["other"]})
+        result = compare_runs(before, after)["resources"][0]
+        self.assertEqual(result["status"], "skipped")
+        self.assertNotIn("removed", result)
+
+    def test_rule_statistics_ids_include_native_backend_context(self):
+        left = {"domain_id": "d", "policy_id": "p", "rule_id": "r", "enforcement_point": "ep", "lr_path": "one"}
+        right = dict(left, lr_path="two")
+        self.assertNotEqual(identity_for("nsx", "rule_statistics", left), identity_for("nsx", "rule_statistics", right))
+
     def test_cli_cannot_overwrite_files_in_either_input_run(self):
         before = self.run_file("before", [{"vm": "1"}])
         after = self.run_file("after", [{"vm": "2"}])

@@ -5,7 +5,7 @@ import json
 
 from .http_client import ApiError
 from .products import module_for, modules
-from . import operational
+from . import operational, assurance, activity, protection_evidence
 from .vcenter_inventory import VCENTER_LIMITS, collect_vcenter
 
 RESOURCE_PATHS = {
@@ -41,8 +41,10 @@ DEFAULT_RESOURCES["nsx"] = [resource for resource in RESOURCE_PATHS["nsx"]
 for product in modules():
     RESOURCE_PATHS.update(product.RESOURCE_PATHS)
     DEFAULT_RESOURCES.update(product.DEFAULT_RESOURCES)
-for component, paths in operational.RESOURCE_PATHS.items():
-    RESOURCE_PATHS[component].update(paths)
+SUPPLEMENTAL_MODULES = (operational, assurance, activity, protection_evidence)
+for supplemental in SUPPLEMENTAL_MODULES:
+    for component, paths in supplemental.RESOURCE_PATHS.items():
+        RESOURCE_PATHS[component].update(paths)
 
 
 def _records(value, key=None):
@@ -63,8 +65,9 @@ def _nonnegative_integer(value, label):
 def collect_resource(client, resource, page_size=100, max_pages=1000):
     """Return all records in the configured scope, or raise without claiming completeness."""
     component = client.target["component"]
-    if operational.supports(component, resource):
-        return operational.collect_resource(client, resource, page_size=page_size, max_pages=max_pages)
+    for supplemental in SUPPLEMENTAL_MODULES:
+        if supplemental.supports(component, resource):
+            return supplemental.collect_resource(client, resource, page_size=page_size, max_pages=max_pages)
     product = module_for(component)
     if product is not None:
         return product.collect_resource(client, resource, page_size=page_size, max_pages=max_pages)

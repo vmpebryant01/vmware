@@ -1,0 +1,12 @@
+{
+  "author": "Paul Bryant",
+  "schema_version": "1.0",
+  "permissions": [
+    {
+      "target": "vcenter-reports", "endpoint": "https://vcenter.example.com",
+      "principal_type": "USER", "principal_name": "replace-account-name", "principal_domain": "vsphere.local",
+      "role_id": "replace-role-id", "object_type": "ClusterComputeResource", "object_id": "domain-c123",
+      "propagating": true
+    }
+  ]
+}

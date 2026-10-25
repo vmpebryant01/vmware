@@ -132,7 +132,7 @@ def _probe_plan(target, resource, path):
 
 def run_preflight(targets, config, client_factory=HttpClient):
     """Probe selected resources without collecting or exporting inventory bodies."""
-    from .collectors import RESOURCE_PATHS, resources_for
+    from .collectors import RESOURCE_PATHS, SUPPLEMENTAL_MODULES, resources_for
     from .operational import RESOURCE_PATHS as OPERATIONAL_PATHS
     from .products import protection_recovery
 
@@ -191,7 +191,22 @@ def run_preflight(targets, config, client_factory=HttpClient):
                 if not path:
                     capability["reason"] = "No verified resource route is available."
                     continue
-                path, params, note = _probe_plan(target, resource, path)
+                method, body = "GET", None
+                probe_module = next((module for module in SUPPLEMENTAL_MODULES
+                                     if module.supports(component, resource) and hasattr(module, "probe_request")), None)
+                if probe_module is None:
+                    from .products import module_for
+                    product = module_for(component)
+                    if product is not None and hasattr(product, "probe_request"):
+                        probe_module = product
+                if probe_module is not None:
+                    plan = probe_module.probe_request(target, resource)
+                    if plan is None:
+                        path, params, note = None, None, "No verified representative probe is available for the configured scope."
+                    else:
+                        method, path, params, body, note = plan
+                else:
+                    path, params, note = _probe_plan(target, resource, path)
                 if note:
                     capability["scope_limit"] = note
                 if path is None:
@@ -200,7 +215,10 @@ def run_preflight(targets, config, client_factory=HttpClient):
                 try:
                     if component in ("live_site_recovery", "vsphere_replication") and resource != "pairings":
                         protection_recovery._ensure_remote(client, target["pairing_id"])
-                    client.request("GET", path, params=params)
+                    if body is None:
+                        client.request(method, path, params=params)
+                    else:
+                        client.request(method, path, params=params, body=body)
                     capability["status"] = "accessible"
                     result["authentication"]["status"] = "verified"
                 except ApiError as exc:

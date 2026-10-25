@@ -12,6 +12,8 @@ The [API inventory collectors](vcf9/api_collectors/README.md) provide separate P
 
 ## Start here
 
+Seven [operational reports](vcf9/api_collectors/docs/reports.md) use completed API collections to report backup freshness, protection gaps, vSAN health and capacity, HCX migration progress, access assignments, NSX rule usage, and Automation request exceptions.
+
 | Example | What it does | Safety and verification |
 | --- | --- | --- |
 | [Snapshot cleanup](vsphere/python/remove_old_snapshots.py) | Finds vSphere snapshots older than a chosen age | Preview by default; a named VM or explicit all-VM scope is required to apply. Selection logic has unit tests. |
